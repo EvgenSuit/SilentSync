@@ -8,6 +8,7 @@ import com.suit.silentsync.CalendarWorker
 import com.suit.silentsync.dndWorkers.DNDOffWorker
 import com.suit.silentsync.dndWorkers.DNDOnWorker
 import org.koin.core.Koin
+import java.time.Clock
 
 class KoinWorkerFactory(
     private val koin: Koin
@@ -20,7 +21,8 @@ class KoinWorkerFactory(
         return when (workerClassName) {
             CalendarWorker::class.java.name -> CalendarWorker(
                 appContext,
-                workerParameters
+                workerParameters,
+                koin.get()
             )
             DNDOnWorker::class.java.name -> DNDOnWorker(
                 appContext,
