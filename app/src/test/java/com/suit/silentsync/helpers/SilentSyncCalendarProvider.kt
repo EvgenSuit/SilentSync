@@ -1,4 +1,4 @@
-package com.suit.silentsync
+package com.suit.silentsync.helpers
 
 import android.content.ContentProvider
 import android.content.ContentUris
@@ -35,7 +35,7 @@ class SilentSyncCalendarProvider: ContentProvider() {
         val queryBuilder = SQLiteQueryBuilder()
         queryBuilder.tables = CalendarEntry.TABLE_NAME
         val cursor = queryBuilder.query(database, projection, selection, selectionArgs, null, null, sortOrder)
-        cursor.setNotificationUri(context?.contentResolver, uri)
+        cursor.setNotificationUri(context?.contentResolver, uri) // not sure what this is for
         return cursor
     }
 
@@ -45,12 +45,13 @@ class SilentSyncCalendarProvider: ContentProvider() {
 
     override fun insert(uri: Uri, values: ContentValues?): Uri {
         val rowId = database.insert(CalendarEntry.TABLE_NAME, "", values)
+        println(rowId)
         if (rowId > 0) {
             val uriWithAppendedId = ContentUris.withAppendedId(CalendarContract.Events.CONTENT_URI, rowId)
             context?.contentResolver?.notifyChange(uriWithAppendedId, null)
             return uriWithAppendedId
         }
-        throw SQLiteException("Failed to insert a record. RowId is less than or equal to 0")
+        throw SQLiteException("Failed to insert a record")
     }
 
     override fun delete(uri: Uri, selection: String?, selectionArgs: Array<out String>?): Int {

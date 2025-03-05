@@ -15,15 +15,6 @@
         android:theme="@style/Theme.SilentSync"
         android:name=".SilentSyncApplication"
         tools:targetApi="31">
-        <provider
-            android:name="androidx.startup.InitializationProvider"
-            android:authorities="${applicationId}.androidx-startup"
-            tools:node="merge">
-            <meta-data
-                android:name="androidx.work.WorkManagerInitializer"
-                android:value="androidx.startup"
-                tools:node="remove" />
-        </provider>
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -37,7 +28,7 @@
         </activity>
 
         <receiver
-            android:name=".CalendarChangeReceiver"
+            android:name=".domain.receivers.CalendarChangeReceiver"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.PROVIDER_CHANGED"/>
@@ -45,10 +36,9 @@
                 <data android:host="com.android.calendar"/>
             </intent-filter>
         </receiver>
-        <receiver android:name=".DNDReceiver"/>
-        <service android:name=".CalendarService"
-            android:exported="true"
-            />
+        <receiver android:name=".domain.receivers.DNDReceiver"
+            android:exported="false"/>
+
     </application>
 
 </manifest>

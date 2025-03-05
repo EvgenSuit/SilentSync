@@ -1,4 +1,4 @@
-package com.suit.silentsync
+package com.suit.silentsync.helpers
 
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
@@ -12,6 +12,7 @@ object CalendarEntry: BaseColumns {
     const val TITLE = CalendarContract.Events.TITLE
     const val DTSTART = CalendarContract.Events.DTSTART
     const val DTEND = CalendarContract.Events.DTEND
+    const val DELETED = CalendarContract.Events.DELETED
 }
 
 class CalendarDBHelper(context: Context): SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
@@ -20,7 +21,8 @@ class CalendarDBHelper(context: Context): SQLiteOpenHelper(context, DATABASE_NAM
                 "${BaseColumns._ID} INTEGER PRIMARY KEY," +
                 "${CalendarEntry.TITLE} TEXT," +
                 "${CalendarEntry.DTSTART} BIGINT," +
-                "${CalendarEntry.DTEND} BIGINT)"
+                "${CalendarEntry.DTEND} BIGINT," +
+                "${CalendarEntry.DELETED} INTEGER DEFAULT 0)"
     private val SQL_DELETE_ENTRIES = "DROP TABLE IF EXISTS ${CalendarEntry.TABLE_NAME}"
 
     override fun onCreate(db: SQLiteDatabase) {
