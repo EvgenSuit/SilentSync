@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notification_policy_permission">Notification policy permission is required in order to toggle dnd</string>
+    <string name="schedule_exact_alarm">Schedule exact alarm permission is required in order for dnd toggle to execute at exact times</string>
+    <string name="read_calendar">Read calendar permission is required to appropriately schedule dnd toggle</string>
+
+    <string name="events_synced">Events synced</string>
+    <string name="sync_events">Sync events</string>
+</resources>

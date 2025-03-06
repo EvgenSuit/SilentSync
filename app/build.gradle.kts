@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.serialization)
 }
 
 android {
@@ -46,6 +47,12 @@ android {
 }
 
 dependencies {
+
+    implementation(project(":feature:dndCalendar"))
+
+    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.androidx.navigation.compose)
+
     implementation(libs.work.runtime.ktx)
 
     implementation(libs.koin.core)
@@ -67,7 +74,6 @@ dependencies {
     testImplementation(libs.robolectric)
     testImplementation(libs.test.core.ktx)
     testImplementation(libs.koin.test)
-    testImplementation(libs.work.testing)
     testImplementation(libs.mockk)
     testImplementation(libs.androidx.sqlite)
 

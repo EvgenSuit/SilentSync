@@ -1,7 +1,7 @@
 package com.suit.silentsync
 
 import android.app.Application
-import com.suit.silentsync.koin.dndModule
+import com.suit.feature.dndcalendar.presentation.koin.dndCalendarFeatureModule
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.startKoin
 
@@ -11,7 +11,7 @@ class SilentSyncApplication: Application() {
 
         startKoin {
             androidContext(this@SilentSyncApplication)
-            modules(dndModule)
+            modules(dndCalendarFeatureModule)
         }
     }
 }
