@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.serialization)
 }
 
 android {
@@ -16,6 +17,7 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        multiDexEnabled = true
     }
 
     buildTypes {
@@ -31,6 +33,11 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+        }
+    }
     kotlinOptions {
         jvmTarget = "11"
     }
@@ -40,7 +47,12 @@ android {
 }
 
 dependencies {
-    implementation(libs.work.runtime.ktx)
+
+    implementation(project(":feature:dndCalendar"))
+    implementation(project(":utility"))
+
+    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.androidx.navigation.compose)
 
     implementation(libs.koin.core)
     implementation(libs.koin.android)
@@ -54,7 +66,15 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+    implementation(libs.androidx.junit.ktx)
+
     testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.test.core.ktx)
+    testImplementation(libs.koin.test)
+    testImplementation(libs.mockk)
+    testImplementation(libs.androidx.sqlite)
 
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
