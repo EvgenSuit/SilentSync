@@ -1,11 +1,11 @@
-package com.suit.dndCalendar.impl.domain.receivers
+package com.suit.dndCalendar.impl.receivers
 
 import android.app.NotificationManager
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.util.Log
-import com.suit.dndCalendar.impl.domain.DNDActionType
+import com.suit.dndCalendar.impl.data.DNDActionType
 import com.suit.dndcalendar.api.CalendarEventChecker
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -18,16 +18,18 @@ internal class DNDReceiver: BroadcastReceiver(), KoinComponent {
 
     // might get called multiple times
     override fun onReceive(context: Context?, intent: Intent?) {
-        try {
-            val action = intent!!.getStringExtra("action")!!
-            val eventId = intent.getLongExtra("eventId", 0L)
+        scope.launch {
+            try {
+                val action = intent!!.getStringExtra("action")!!
+                val eventId = intent.getLongExtra("eventId", 0L)
 
-            println("Action: $action, eventId: $eventId")
-            Log.d("EventScheduler", "Action: $action, eventId: $eventId")
-            scope.launch {
+                println("Action: $action, eventId: $eventId")
+                Log.d("EventScheduler", "Action: $action, eventId: $eventId")
                 if (calendarEventChecker.doesEventExist(eventId)) {
-                    val notificationManager = context!!.getSystemService(NotificationManager::class.java)
-                    val isDndOn = notificationManager.currentInterruptionFilter == NotificationManager.INTERRUPTION_FILTER_PRIORITY
+                    val notificationManager =
+                        context!!.getSystemService(NotificationManager::class.java)
+                    val isDndOn =
+                        notificationManager.currentInterruptionFilter == NotificationManager.INTERRUPTION_FILTER_PRIORITY
                     when (action) {
                         DNDActionType.DND_ON.name -> {
                             // make sure dnd isn't turned on again
@@ -36,6 +38,7 @@ internal class DNDReceiver: BroadcastReceiver(), KoinComponent {
                                 notificationManager.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_PRIORITY)
                             }
                         }
+
                         DNDActionType.DND_OFF.name -> {
                             // turn dnd off only if it's on
                             if (isDndOn) {
@@ -44,10 +47,10 @@ internal class DNDReceiver: BroadcastReceiver(), KoinComponent {
                         }
                     }
                 }
+            } catch (e: Exception) {
+                println("DNDReceiver exception: $e")
+                Log.d("EventScheduler", "DNDReceiver exception: $e")
             }
-        } catch (e: Exception) {
-            println("DNDReceiver exception: $e")
-            Log.d("EventScheduler", "DNDReceiver exception: $e")
         }
     }
 }

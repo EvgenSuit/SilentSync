@@ -5,9 +5,9 @@ import android.content.Context
 import android.content.Intent
 import androidx.test.core.app.ApplicationProvider
 import com.suit.dndCalendar.impl.data.CalendarEventData
-import com.suit.dndCalendar.impl.domain.CalendarEventCheckerImpl
-import com.suit.dndCalendar.impl.domain.DNDActionType
-import com.suit.dndCalendar.impl.domain.receivers.DNDReceiver
+import com.suit.dndCalendar.impl.data.CalendarEventCheckerImpl
+import com.suit.dndCalendar.impl.data.DNDActionType
+import com.suit.dndCalendar.impl.receivers.DNDReceiver
 import com.suit.dndCalendar.impl.helpers.SilentSyncCalendarProvider
 import com.suit.dndCalendar.impl.helpers.TestHelpers
 import com.suit.dndcalendar.api.CalendarEventChecker

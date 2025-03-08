@@ -1,6 +1,7 @@
 package com.suit.utility.ui.theme
 
 import androidx.compose.material3.Typography
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
@@ -33,18 +34,21 @@ val AppTypography = Typography(
     headlineMedium = baseline.headlineMedium.copy(fontFamily = displayFontFamily),
     headlineSmall = baseline.headlineSmall.copy(fontFamily = displayFontFamily),
     titleLarge = baseline.titleLarge.copy(fontFamily = displayFontFamily),
-    titleMedium = baseline.titleMedium.copy(
+    titleMedium = TextStyle(
         fontFamily = displayFontFamily,
-        lineHeight = 30.sp,
         fontSize = 35.sp),
-    titleSmall = baseline.titleSmall.copy(fontFamily = displayFontFamily),
+
+    titleSmall = TextStyle(
+        fontFamily = displayFontFamily,
+        fontSize = 30.sp),
     bodyLarge = baseline.bodyLarge.copy(fontFamily = bodyFontFamily),
     bodyMedium = baseline.bodyMedium.copy(fontFamily = bodyFontFamily),
     bodySmall = baseline.bodySmall.copy(fontFamily = bodyFontFamily),
     labelLarge = baseline.labelLarge.copy(fontFamily = bodyFontFamily),
-    labelMedium = baseline.labelMedium.copy(
+    labelMedium = TextStyle(
         fontFamily = bodyFontFamily,
-        fontSize = 18.sp),
+        fontSize = 20.sp
+    ),
     labelSmall = baseline.labelSmall.copy(fontFamily = bodyFontFamily),
 )
 

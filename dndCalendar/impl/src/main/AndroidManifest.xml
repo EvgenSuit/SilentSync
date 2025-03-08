@@ -6,7 +6,7 @@
 
     <application>
         <receiver
-            android:name=".domain.receivers.CalendarChangeReceiver"
+            android:name=".receivers.CalendarChangeReceiver"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.PROVIDER_CHANGED"/>
@@ -14,7 +14,7 @@
                 <data android:host="com.android.calendar"/>
             </intent-filter>
         </receiver>
-        <receiver android:name=".domain.receivers.DNDReceiver"
+        <receiver android:name=".receivers.DNDReceiver"
             android:exported="false"/>
     </application>
 </manifest>

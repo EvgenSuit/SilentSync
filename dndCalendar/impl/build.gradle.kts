@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.ksp.plugin)
 }
 
 android {
@@ -13,7 +14,6 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles("consumer-rules.pro")
     }
-
     buildTypes {
         release {
             isMinifyEnabled = false
@@ -40,12 +40,20 @@ android {
 dependencies {
 
     implementation(project(":dndCalendar:api"))
+    implementation(project(":utility"))
+
+    implementation(libs.androidx.room.runtime)
+    ksp(libs.androidx.room.compiler)
+    implementation(libs.androidx.room.ktx)
+
     implementation(libs.koin.core)
     implementation(libs.koin.android)
 
     implementation(libs.androidx.core.ktx)
 
+    testImplementation(project(":utility"))
     testImplementation(libs.junit)
+    testImplementation(libs.androidx.arch.testing)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.robolectric)
     testImplementation(libs.test.core.ktx)

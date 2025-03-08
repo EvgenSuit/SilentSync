@@ -1,4 +1,4 @@
-package com.suit.dndCalendar.impl.domain
+package com.suit.dndCalendar.impl.data
 
 import android.content.ContentResolver
 import android.database.Cursor

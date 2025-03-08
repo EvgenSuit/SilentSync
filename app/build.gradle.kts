@@ -49,11 +49,10 @@ android {
 dependencies {
 
     implementation(project(":feature:dndCalendar"))
+    implementation(project(":utility"))
 
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.androidx.navigation.compose)
-
-    implementation(libs.work.runtime.ktx)
 
     implementation(libs.koin.core)
     implementation(libs.koin.android)

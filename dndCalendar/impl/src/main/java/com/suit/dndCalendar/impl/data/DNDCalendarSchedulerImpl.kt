@@ -1,4 +1,4 @@
-package com.suit.dndCalendar.impl.domain
+package com.suit.dndCalendar.impl.data
 
 import android.annotation.SuppressLint
 import android.app.AlarmManager
@@ -8,18 +8,30 @@ import android.content.Intent
 import android.database.Cursor
 import android.provider.CalendarContract
 import android.util.Log
-import com.suit.dndCalendar.impl.data.CalendarEventData
-import com.suit.dndCalendar.impl.domain.receivers.DNDReceiver
+import com.suit.dndCalendar.impl.data.db.DNDScheduleCalendarCriteriaEntity
+import com.suit.dndCalendar.impl.receivers.DNDReceiver
+import com.suit.utility.NoCalendarCriteriaFound
 import com.suit.dndcalendar.api.DNDCalendarScheduler
+import com.suit.dndcalendar.api.DNDScheduleCalendarCriteria
+import com.suit.dndcalendar.api.DNDScheduleCalendarCriteriaManager
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.time.Clock
 
 internal class DNDCalendarSchedulerImpl(
     private val context: Context,
-    private val clock: Clock
+    private val clock: Clock,
+    private val dndScheduleCalendarCriteriaManager: DNDScheduleCalendarCriteriaManager
 ): DNDCalendarScheduler {
-    override fun schedule() {
-        // TODO: execute below code only if criteria is given
+
+    override suspend fun schedule() {
+        val criteria = dndScheduleCalendarCriteriaManager.getCriteria().firstOrNull() ?:
+            throw NoCalendarCriteriaFound("No criteria for calendar-based dnd toggle was given")
+
         val projection = arrayOf(
             CalendarContract.Events._ID,
             CalendarContract.Events.TITLE,
@@ -32,8 +44,7 @@ internal class DNDCalendarSchedulerImpl(
             CalendarContract.Events.CONTENT_URI,
             projection,
             "${CalendarContract.Events.TITLE} LIKE ?",
-            // TODO: replace criteria with user-defined string (with datastore)
-            arrayOf("%custom%"),
+            arrayOf("%${criteria.likeName}%"),
             null
         )
         Log.d(

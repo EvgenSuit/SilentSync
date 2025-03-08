@@ -24,6 +24,7 @@ android {
             )
         }
     }
+    testOptions.unitTests.isIncludeAndroidResources = true
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
@@ -57,8 +58,11 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+    implementation(libs.androidx.ui.test.junit4.android)
 
     testImplementation(libs.androidx.junit.ktx)
+    testImplementation(libs.androidx.arch.testing)
+    testImplementation(libs.turbine)
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.robolectric)

@@ -2,4 +2,6 @@
 <resources>
     <string name="permission_request">Permission Request</string>
     <string name="accept">Accept</string>
+
+    <string name="could_not_sync_events">Could not sync calendar events</string>
 </resources>

@@ -3,7 +3,7 @@ package com.suit.dndCalendar.impl
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import com.suit.dndCalendar.impl.data.CalendarEventData
-import com.suit.dndCalendar.impl.domain.CalendarEventCheckerImpl
+import com.suit.dndCalendar.impl.data.CalendarEventCheckerImpl
 import com.suit.dndcalendar.api.CalendarEventChecker
 import com.suit.dndCalendar.impl.helpers.SilentSyncCalendarProvider
 import com.suit.dndCalendar.impl.helpers.TestHelpers

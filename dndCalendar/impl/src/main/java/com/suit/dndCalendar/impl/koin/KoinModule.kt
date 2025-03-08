@@ -1,9 +1,13 @@
 package com.suit.dndCalendar.impl.koin
 
-import com.suit.dndCalendar.impl.domain.CalendarEventCheckerImpl
-import com.suit.dndCalendar.impl.domain.DNDCalendarSchedulerImpl
+import androidx.room.Room
+import com.suit.dndCalendar.impl.data.CalendarEventCheckerImpl
+import com.suit.dndCalendar.impl.data.DNDCalendarSchedulerImpl
+import com.suit.dndCalendar.impl.data.db.DNDScheduleCalendarCriteriaDb
+import com.suit.dndCalendar.impl.data.DNDScheduleCalendarCriteriaManagerImpl
 import com.suit.dndcalendar.api.CalendarEventChecker
 import com.suit.dndcalendar.api.DNDCalendarScheduler
+import com.suit.dndcalendar.api.DNDScheduleCalendarCriteriaManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -17,6 +21,16 @@ val dndCalendarImplKoinModule = module {
     single<CalendarEventChecker> { CalendarEventCheckerImpl(
         contentResolver = androidContext().contentResolver,
         clock = get()) }
+    single<DNDScheduleCalendarCriteriaManager> {
+        DNDScheduleCalendarCriteriaManagerImpl(
+            db = Room.databaseBuilder(
+                androidContext(),
+                DNDScheduleCalendarCriteriaDb::class.java,
+                "dnd-schedule-calendar-db"
+            ).build()
+        )
+    }
     single<DNDCalendarScheduler> { DNDCalendarSchedulerImpl(clock = get(),
-        context = androidContext()) }
+        context = androidContext(),
+        dndScheduleCalendarCriteriaManager = get()) }
 }
