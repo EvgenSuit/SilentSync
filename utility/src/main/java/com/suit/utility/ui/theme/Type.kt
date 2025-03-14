@@ -28,7 +28,10 @@ val AppTypography = Typography(
     displayLarge = baseline.displayLarge.copy(
         fontFamily = displayFontFamily
     ),
-    displayMedium = baseline.displayMedium.copy(fontFamily = displayFontFamily),
+    displayMedium = TextStyle(
+        fontFamily = displayFontFamily,
+        fontSize = 20.sp
+    ),
     displaySmall = baseline.displaySmall.copy(fontFamily = displayFontFamily),
     headlineLarge = baseline.headlineLarge.copy(fontFamily = displayFontFamily),
     headlineMedium = baseline.headlineMedium.copy(fontFamily = displayFontFamily),

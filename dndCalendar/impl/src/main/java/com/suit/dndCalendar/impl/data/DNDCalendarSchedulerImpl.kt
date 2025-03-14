@@ -1,30 +1,23 @@
 package com.suit.dndCalendar.impl.data
 
 import android.annotation.SuppressLint
-import android.app.AlarmManager
-import android.app.PendingIntent
 import android.content.Context
-import android.content.Intent
 import android.database.Cursor
 import android.provider.CalendarContract
 import android.util.Log
-import com.suit.dndCalendar.impl.data.db.DNDScheduleCalendarCriteriaEntity
-import com.suit.dndCalendar.impl.receivers.DNDReceiver
-import com.suit.utility.NoCalendarCriteriaFound
 import com.suit.dndcalendar.api.DNDCalendarScheduler
-import com.suit.dndcalendar.api.DNDScheduleCalendarCriteria
 import com.suit.dndcalendar.api.DNDScheduleCalendarCriteriaManager
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.first
+import com.suit.dndcalendar.api.UpcomingEventData
+import com.suit.dndcalendar.api.UpcomingEventsManager
+import com.suit.utility.NoCalendarCriteriaFound
 import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.time.Clock
 
 internal class DNDCalendarSchedulerImpl(
     private val context: Context,
     private val clock: Clock,
+    private val upcomingEventsManager: UpcomingEventsManager,
     private val dndScheduleCalendarCriteriaManager: DNDScheduleCalendarCriteriaManager
 ): DNDCalendarScheduler {
 
@@ -51,6 +44,7 @@ internal class DNDCalendarSchedulerImpl(
             "EventScheduler",
             "Executing EventScheduler"
         )
+        val upcomingEvents = upcomingEventsManager.upcomingEventsFlow().firstOrNull()
         cursor?.use {
             if (it.count != 0) {
                 while (it.moveToNext()) {
@@ -64,7 +58,8 @@ internal class DNDCalendarSchedulerImpl(
                     val deleted =
                         it.getInt(it.getColumnIndexOrThrow(CalendarContract.Events.DELETED))
                     val event = CalendarEventData(eventId, title, startTime, endTime, deleted == 1)
-                    scheduleAlarms(context, event)
+                    scheduleAlarms(event,
+                        onGetSavedUpcomingEventData = { upcomingEvents?.firstOrNull { it.id == eventId }} )
 
                     println("Event ID: $eventId, Title: $title, Start: $startTime, End: $endTime, Is deleted: $deleted")
                     Log.d(
@@ -79,42 +74,31 @@ internal class DNDCalendarSchedulerImpl(
     }
 
     @SuppressLint("ScheduleExactAlarm")
-    private fun scheduleAlarms(context: Context, event: CalendarEventData) {
-        val alarmManager = context.getSystemService(AlarmManager::class.java)
-        val dndOnIntent = Intent(context, DNDReceiver::class.java).apply {
-            putExtra("action", DNDActionType.DND_ON.name)
-            putExtra("eventId", event.id)
-        }
-        val dndOffIntent = Intent(context, DNDReceiver::class.java).apply {
-            putExtra("action", DNDActionType.DND_OFF.name)
-            putExtra("eventId", event.id)
-        }
-        val dndOnPendingIntent = PendingIntent.getBroadcast(
-            context, (event.id*2).toInt(), dndOnIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-        val dndOffPendingIntent = PendingIntent.getBroadcast(
-            context, (event.id*2+1).toInt(), dndOffIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
+    private suspend fun scheduleAlarms(event: CalendarEventData,
+                                       onGetSavedUpcomingEventData: () -> UpcomingEventData?) {
         when (event.deleted || event.endTime < clock.millis()) {
             true -> {
-                alarmManager.cancel(dndOnPendingIntent)
-                alarmManager.cancel(dndOffPendingIntent)
+                upcomingEventsManager.removeUpcomingEvent(event.id)
                 Log.d(
                     "EventScheduler",
                     "Removed dnd toggle: $event"
                 )
             }
             false -> {
-                alarmManager.setExactAndAllowWhileIdle(
-                    AlarmManager.RTC_WAKEUP,
-                    event.startTime,
-                    dndOnPendingIntent
-                )
-                alarmManager.setExactAndAllowWhileIdle(
-                    AlarmManager.RTC_WAKEUP,
-                    event.endTime,
-                    dndOffPendingIntent
-                )
+                upcomingEventsManager.apply {
+                    // if dnd toggle is already scheduled, make sure that dnd on and off options are not set to default
+                    val upcomingEvent = onGetSavedUpcomingEventData()?.copy(
+                        id = event.id,
+                        title = event.title,
+                        startTime = event.startTime,
+                        endTime = event.endTime
+                    ) ?: event.toUpcomingEvent()
+                    println(upcomingEvent)
+                    insert(upcomingEvent)
+                    if (upcomingEvent.scheduleDndOn) setDndOnToggle(event.id, event.startTime)
+                    if (upcomingEvent.scheduleDndOff) setDndOffToggle(event.id, event.endTime)
+                }
+
                 println("Scheduled DND ON at ${SimpleDateFormat("yyyy-MM-dd, HH:mm:ss").format(event.startTime)} " +
                         "and DND OFF at ${SimpleDateFormat("yyyy-MM-dd, HH:mm:ss").format(event.endTime)}.")
                 Log.d(

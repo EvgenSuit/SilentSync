@@ -1,10 +1,10 @@
-package com.suit.dndCalendar.impl.data.db
+package com.suit.dndCalendar.impl.data.criteriaDb
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
 @Entity
 internal data class DNDScheduleCalendarCriteriaEntity(
-    @PrimaryKey(autoGenerate = true) val id: Long = 1,
+    @PrimaryKey val id: Long = 1,
     val likeName: String
 )

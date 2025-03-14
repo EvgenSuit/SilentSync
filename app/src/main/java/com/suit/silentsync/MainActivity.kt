@@ -4,6 +4,9 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,6 +21,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalFocusManager
 import com.suit.silentsync.navigation.SilentSyncNavHost
 import com.suit.utility.ui.CustomSnackbar
 import com.suit.utility.ui.LocalSnackbarController
@@ -37,6 +43,7 @@ class MainActivity : ComponentActivity() {
                     snackbarHostState = snackbarHostState
                 ))
             }
+            val focusManager = LocalFocusManager.current
             SilentSyncTheme {
                 Scaffold(
                     snackbarHost = {
@@ -45,7 +52,14 @@ class MainActivity : ComponentActivity() {
                                 onDismiss = snackbarController::dismiss)
                         }
                     },
-                    modifier = Modifier.fillMaxSize()) { innerPadding ->
+                    modifier = Modifier.fillMaxSize()
+                        .pointerInput(Unit) {
+                            awaitEachGesture {
+                                val downEvent = awaitFirstDown(pass = PointerEventPass.Initial)
+                                val upEvent = waitForUpOrCancellation(pass = PointerEventPass.Initial)
+                                if (upEvent != null && !downEvent.isConsumed) focusManager.clearFocus(true)
+                            }
+                        }) { innerPadding ->
                     CompositionLocalProvider(LocalSnackbarController provides snackbarController) {
                         SilentSyncNavHost(
                             modifier = Modifier
@@ -61,3 +75,4 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
+

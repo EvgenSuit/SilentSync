@@ -7,7 +7,9 @@ import android.content.Intent
 import android.util.Log
 import com.suit.dndCalendar.impl.data.DNDActionType
 import com.suit.dndcalendar.api.CalendarEventChecker
+import com.suit.dndcalendar.api.UpcomingEventsManager
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -15,6 +17,7 @@ import org.koin.core.component.inject
 internal class DNDReceiver: BroadcastReceiver(), KoinComponent {
     private val calendarEventChecker: CalendarEventChecker by inject()
     private val scope: CoroutineScope by inject()
+    private val upcomingEventsManager: UpcomingEventsManager by inject()
 
     // might get called multiple times
     override fun onReceive(context: Context?, intent: Intent?) {
@@ -40,9 +43,11 @@ internal class DNDReceiver: BroadcastReceiver(), KoinComponent {
                         }
 
                         DNDActionType.DND_OFF.name -> {
-                            // turn dnd off only if it's on
-                            if (isDndOn) {
-                                notificationManager.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_ALL)
+                            val upcomingEvent = upcomingEventsManager.upcomingEventsFlow().firstOrNull()
+                                ?.firstOrNull { it.id == eventId }
+                            if (isDndOn && upcomingEvent != null) {
+                                upcomingEventsManager.removeUpcomingEvent(eventId)
+                                if (upcomingEvent.scheduleDndOff) notificationManager.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_ALL)
                             }
                         }
                     }
