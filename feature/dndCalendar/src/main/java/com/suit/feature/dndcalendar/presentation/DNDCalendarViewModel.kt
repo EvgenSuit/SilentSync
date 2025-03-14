@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.suit.dndcalendar.api.DNDCalendarScheduler
 import com.suit.dndcalendar.api.DNDScheduleCalendarCriteria
 import com.suit.dndcalendar.api.DNDScheduleCalendarCriteriaManager
+import com.suit.dndcalendar.api.UpcomingEventData
+import com.suit.dndcalendar.api.UpcomingEventsManager
 import com.suit.feature.dndcalendar.R
 import com.suit.utility.NoCalendarCriteriaFound
 import com.suit.utility.ui.CustomResult
@@ -15,6 +17,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
@@ -24,15 +27,25 @@ import kotlinx.coroutines.launch
 class DNDCalendarViewModel(
     private val dndCalendarScheduler: DNDCalendarScheduler,
     private val dndScheduleCalendarCriteriaManager: DNDScheduleCalendarCriteriaManager,
+    private val upcomingEventsManager: UpcomingEventsManager,
     private val dispatcher: CoroutineDispatcher
 ): ViewModel() {
+    private val upcomingEvents = upcomingEventsManager.upcomingEventsFlow()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(3000), listOf())
+
     private val _uiState = MutableStateFlow(DNDCalendarUIState())
     val uiState = _uiState
         .onStart {
             fetchCriteria()
             onStartSync()
         }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DNDCalendarUIState())
+        .combine(upcomingEvents) { uiState, events ->
+            uiState.copy(
+                upcomingEvents = events
+            )
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(3000), DNDCalendarUIState())
+
 
     private val _uiEvents = MutableSharedFlow<DNDCalendarUIEvent>()
     val uiEvents = _uiEvents.asSharedFlow()
@@ -42,6 +55,24 @@ class DNDCalendarViewModel(
             DNDCalendarIntent.GetCriteria -> fetchCriteria()
             is DNDCalendarIntent.InputCriteria -> inputCriteria(intent.dndCalendarCriteriaInput)
             DNDCalendarIntent.Schedule -> schedule()
+
+            is DNDCalendarIntent.ToggleDNDOn -> toggleDNDMode(true, intent.id, intent.set)
+            is DNDCalendarIntent.ToggleDNDOff -> toggleDNDMode(false, intent.id, intent.set)
+        }
+    }
+
+    private fun toggleDNDMode(dndOn: Boolean, id: Long, set: Boolean) {
+        viewModelScope.launch {
+            try {
+                upcomingEventsManager.apply {
+                    when (dndOn) {
+                        true -> if (set) setDndOnToggle(id, upcomingEvents.value.firstOrNull { it.id == id }?.startTime ?: return@launch) else removeDndOnToggle(id)
+                        false -> if (set) setDndOffToggle(id, upcomingEvents.value.firstOrNull { it.id == id }?.endTime ?: return@launch) else removeDndOffToggle(id)
+                    }
+                }
+            } catch (e: Exception) {
+                println(e)
+            }
         }
     }
 
@@ -104,5 +135,6 @@ class DNDCalendarViewModel(
 data class DNDCalendarUIState(
     val eventsSyncResult: CustomResult = CustomResult.InProgress,
     val criteriaFetchResult: CustomResult = CustomResult.None,
+    val upcomingEvents: List<UpcomingEventData> = listOf(),
     val criteria: DNDScheduleCalendarCriteria? = null
 )

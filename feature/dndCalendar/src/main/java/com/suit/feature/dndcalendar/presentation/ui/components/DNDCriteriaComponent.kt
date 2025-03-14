@@ -1,4 +1,4 @@
-package com.suit.feature.dndcalendar.presentation.ui
+package com.suit.feature.dndcalendar.presentation.ui.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,7 +18,6 @@ import androidx.compose.ui.unit.dp
 import com.suit.dndcalendar.api.DNDScheduleCalendarCriteria
 import com.suit.feature.dndcalendar.R
 import com.suit.feature.dndcalendar.presentation.DNDCalendarCriteriaInput
-import com.suit.feature.dndcalendar.presentation.DNDCalendarIntent
 import com.suit.utility.ui.CommonButton
 import com.suit.utility.ui.theme.SilentSyncTheme
 

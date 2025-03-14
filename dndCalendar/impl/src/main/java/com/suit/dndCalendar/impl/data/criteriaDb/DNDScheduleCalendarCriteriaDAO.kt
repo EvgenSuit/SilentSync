@@ -1,4 +1,4 @@
-package com.suit.dndCalendar.impl.data.db
+package com.suit.dndCalendar.impl.data.criteriaDb
 
 import androidx.room.Dao
 import androidx.room.Insert

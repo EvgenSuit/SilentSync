@@ -21,7 +21,7 @@ dependencyResolutionManagement {
 
 rootProject.name = "SilentSync"
 include(":app")
-include(":dndCalendar:api")
 include(":dndCalendar:impl")
 include(":feature:dndCalendar")
 include(":utility")
+include(":dndCalendar:api")

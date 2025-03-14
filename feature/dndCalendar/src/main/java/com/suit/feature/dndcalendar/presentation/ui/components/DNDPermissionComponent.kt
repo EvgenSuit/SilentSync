@@ -1,4 +1,4 @@
-package com.suit.feature.dndcalendar.presentation.ui
+package com.suit.feature.dndcalendar.presentation.ui.components
 
 import android.Manifest
 import android.app.AlarmManager
