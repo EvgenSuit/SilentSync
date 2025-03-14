@@ -11,8 +11,10 @@ import com.suit.dndCalendar.impl.data.CalendarEventCheckerImpl
 import com.suit.dndCalendar.impl.data.CalendarEventData
 import com.suit.dndCalendar.impl.data.DNDCalendarSchedulerImpl
 import com.suit.dndCalendar.impl.data.DNDScheduleCalendarCriteriaManagerImpl
+import com.suit.dndCalendar.impl.data.UpcomingEventsManagerImpl
 import com.suit.dndCalendar.impl.data.criteriaDb.DNDScheduleCalendarCriteriaDb
 import com.suit.dndCalendar.impl.data.criteriaDb.DNDScheduleCalendarCriteriaEntity
+import com.suit.dndCalendar.impl.data.upcomingEventsDb.UpcomingEventsDb
 import com.suit.dndCalendar.impl.helpers.SilentSyncCalendarProvider
 import com.suit.dndCalendar.impl.helpers.TestHelpers
 import com.suit.dndCalendar.impl.receivers.CalendarChangeReceiver
@@ -44,7 +46,9 @@ class CalendarChangeReceiverTests {
     private lateinit var context: Context
     private lateinit var testClock: TestClock
     private lateinit var contentProviderController: ContentProviderController<SilentSyncCalendarProvider>
-    private lateinit var db: DNDScheduleCalendarCriteriaDb
+    private lateinit var criteriaDb: DNDScheduleCalendarCriteriaDb
+    private lateinit var upcomingEventsDb: UpcomingEventsDb
+
     @get:Rule
     val instantTaskExecutorRule = InstantTaskExecutorRule()
     @get: Rule
@@ -56,10 +60,15 @@ class CalendarChangeReceiverTests {
         testClock = TestClock()
 
         contentProviderController = TestHelpers.buildProvider()
-        db = Room.inMemoryDatabaseBuilder(
+        criteriaDb = Room.inMemoryDatabaseBuilder(
             context,
             DNDScheduleCalendarCriteriaDb::class.java
         ).allowMainThreadQueries().build()
+        upcomingEventsDb = Room.inMemoryDatabaseBuilder(
+            context,
+            UpcomingEventsDb::class.java
+        ).allowMainThreadQueries().build()
+
         startKoin {
             modules(module {
                 single<Clock> { testClock }
@@ -67,7 +76,10 @@ class CalendarChangeReceiverTests {
                 single<DNDCalendarScheduler> { DNDCalendarSchedulerImpl(
                     context = context,
                     clock = get(),
-                    dndScheduleCalendarCriteriaManager = DNDScheduleCalendarCriteriaManagerImpl(dndScheduleCalendarCriteriaDb = db)
+                    upcomingEventsManager = UpcomingEventsManagerImpl(
+                        context, db = upcomingEventsDb
+                    ),
+                    dndScheduleCalendarCriteriaManager = DNDScheduleCalendarCriteriaManagerImpl(dndScheduleCalendarCriteriaDb = criteriaDb)
                 ) }
                 single<CalendarEventChecker> { CalendarEventCheckerImpl(
                     contentResolver = context.contentResolver,
@@ -79,7 +91,8 @@ class CalendarChangeReceiverTests {
     @After
     fun cleanup() {
         contentProviderController.shutdown()
-        db.close()
+        criteriaDb.close()
+        upcomingEventsDb.close()
     }
 
     @Test
@@ -165,7 +178,7 @@ class CalendarChangeReceiverTests {
 
     private suspend fun insertEntity(entity: DNDScheduleCalendarCriteriaEntity
     =DNDScheduleCalendarCriteriaEntity(likeName = "like name event")) {
-        db.dao().apply {
+        criteriaDb.dao().apply {
             replaceCriteria(entity)
             assertEquals(entity, criteriaFlow().first())
         }

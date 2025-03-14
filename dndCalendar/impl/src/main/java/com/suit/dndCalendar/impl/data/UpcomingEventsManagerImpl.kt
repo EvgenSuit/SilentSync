@@ -58,6 +58,10 @@ internal class UpcomingEventsManagerImpl(
         db.dao().delete(id)
     }
 
+    override suspend fun deleteAllEvents() {
+        db.dao().deleteAll()
+    }
+
     override fun upcomingEventsFlow() = db.dao().getUpcomingEvents()
 
     private fun constructPendingIntent(id: Long, dndOn: Boolean): PendingIntent {
