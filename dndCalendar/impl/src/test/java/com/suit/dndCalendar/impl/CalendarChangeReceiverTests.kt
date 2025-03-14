@@ -11,8 +11,8 @@ import com.suit.dndCalendar.impl.data.CalendarEventCheckerImpl
 import com.suit.dndCalendar.impl.data.CalendarEventData
 import com.suit.dndCalendar.impl.data.DNDCalendarSchedulerImpl
 import com.suit.dndCalendar.impl.data.DNDScheduleCalendarCriteriaManagerImpl
-import com.suit.dndCalendar.impl.data.db.DNDScheduleCalendarCriteriaDb
-import com.suit.dndCalendar.impl.data.db.DNDScheduleCalendarCriteriaEntity
+import com.suit.dndCalendar.impl.data.criteriaDb.DNDScheduleCalendarCriteriaDb
+import com.suit.dndCalendar.impl.data.criteriaDb.DNDScheduleCalendarCriteriaEntity
 import com.suit.dndCalendar.impl.helpers.SilentSyncCalendarProvider
 import com.suit.dndCalendar.impl.helpers.TestHelpers
 import com.suit.dndCalendar.impl.receivers.CalendarChangeReceiver
@@ -23,7 +23,6 @@ import junit.framework.TestCase.assertEquals
 import junit.framework.TestCase.assertTrue
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -68,7 +67,7 @@ class CalendarChangeReceiverTests {
                 single<DNDCalendarScheduler> { DNDCalendarSchedulerImpl(
                     context = context,
                     clock = get(),
-                    dndScheduleCalendarCriteriaManager = DNDScheduleCalendarCriteriaManagerImpl(db = db)
+                    dndScheduleCalendarCriteriaManager = DNDScheduleCalendarCriteriaManagerImpl(dndScheduleCalendarCriteriaDb = db)
                 ) }
                 single<CalendarEventChecker> { CalendarEventCheckerImpl(
                     contentResolver = context.contentResolver,
