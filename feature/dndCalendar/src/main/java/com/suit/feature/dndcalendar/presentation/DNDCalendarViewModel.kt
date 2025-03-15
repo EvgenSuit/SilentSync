@@ -71,7 +71,7 @@ class DNDCalendarViewModel(
                     }
                 }
             } catch (e: Exception) {
-                println(e)
+                _uiEvents.emit(DNDCalendarUIEvent.ShowSnackbar(UIText.StringResource(R.string.could_not_toggle_dnd_mode)))
             }
         }
     }

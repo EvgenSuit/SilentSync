@@ -1,7 +1,6 @@
 package com.suit.dndCalendar.impl.data.upcomingEventsDb
 
 import androidx.room.Dao
-import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
@@ -25,5 +24,5 @@ internal interface UpcomingEventsDAO {
     suspend fun delete(id: Long)
 
     @Query("DELETE FROM UpcomingEventData")
-    suspend fun clearTable()
+    suspend fun deleteAll()
 }

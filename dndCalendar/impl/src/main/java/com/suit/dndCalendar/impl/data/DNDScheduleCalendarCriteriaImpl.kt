@@ -20,11 +20,7 @@ internal class DNDScheduleCalendarCriteriaManagerImpl(
                 likeName = criteria.likeName
             )
         )
-        upcomingEventsManager.upcomingEventsFlow().firstOrNull()?.let { events ->
-            events.forEach {
-                upcomingEventsManager.removeUpcomingEvent(it.id)
-            }
-        }
+        upcomingEventsManager.deleteAllEvents()
     }
 
     override fun getCriteria(): Flow<DNDScheduleCalendarCriteria?> =
