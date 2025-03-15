@@ -5,8 +5,11 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performScrollToKey
 import com.suit.dndcalendar.api.DNDScheduleCalendarCriteria
+import com.suit.dndcalendar.api.UpcomingEventData
 import com.suit.feature.dndcalendar.presentation.DNDCalendarUIState
 import com.suit.feature.dndcalendar.presentation.ui.DNDCalendarContent
 import com.suit.utility.test.MainDispatcherRule
@@ -75,6 +78,28 @@ class DNDCalendarScreenTests {
 
             onNodeWithText(getString(R.string.sync_events)).assertIsEnabled()
             onNodeWithText(getString(R.string.events_not_synced)).assertIsDisplayed()
+        }
+    }
+
+    @Test
+    fun upcomingEventsNotEmpty() {
+        val upcomingEvents = List(10) {
+            UpcomingEventData(
+                id = it.toLong(),
+                title = "Title $it",
+                startTime = (it*2).toLong(),
+                endTime = ((it*2)+1).toLong()
+            )
+        }
+        composeRule.setContentWithSnackbar(
+            composable = { DNDCalendarContent(DNDCalendarUIState(
+                upcomingEvents = upcomingEvents
+            ), onIntent = {}) }
+        ) {
+            upcomingEvents.forEach {
+                onNodeWithTag("UpcomingEventsColumn").performScrollToKey(it.id)
+                onNodeWithTag("UpcomingEventId: ${it.id}").assertExists()
+            }
         }
     }
 }

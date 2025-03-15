@@ -12,6 +12,7 @@
     <string name="like_name_criteria_placeholder">What should event names contain</string>
     <string name="sync_events">Sync events</string>
     <string name="successfully_synced_events">Successfully synced calendar events</string>
+    <string name="could_not_toggle_dnd_mode">Could not toggle DND mode</string>
     <string name="could_not_update_criteria">Could not update criteria</string>
 
     <string name="upcoming_events">Upcoming events</string>
