@@ -153,6 +153,7 @@ fun DNDCalendarContent(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(400.dp)
+                            .testTag("UpcomingEventsColumn")
                     ) {
                         items(uiState.upcomingEvents, key = { it.id }) { event ->
                             UpcomingEventComponent(

@@ -11,13 +11,16 @@ import com.suit.dndCalendar.impl.data.CalendarEventCheckerImpl
 import com.suit.dndCalendar.impl.data.CalendarEventData
 import com.suit.dndCalendar.impl.data.DNDCalendarSchedulerImpl
 import com.suit.dndCalendar.impl.data.DNDScheduleCalendarCriteriaManagerImpl
+import com.suit.dndCalendar.impl.data.UpcomingEventsManagerImpl
 import com.suit.dndCalendar.impl.data.criteriaDb.DNDScheduleCalendarCriteriaDb
 import com.suit.dndCalendar.impl.data.criteriaDb.DNDScheduleCalendarCriteriaEntity
+import com.suit.dndCalendar.impl.data.upcomingEventsDb.UpcomingEventsDb
 import com.suit.dndCalendar.impl.helpers.SilentSyncCalendarProvider
 import com.suit.dndCalendar.impl.helpers.TestHelpers
 import com.suit.dndCalendar.impl.receivers.CalendarChangeReceiver
 import com.suit.dndcalendar.api.CalendarEventChecker
 import com.suit.dndcalendar.api.DNDCalendarScheduler
+import com.suit.dndcalendar.api.UpcomingEventData
 import com.suit.utility.test.MainDispatcherRule
 import junit.framework.TestCase.assertEquals
 import junit.framework.TestCase.assertTrue
@@ -42,9 +45,14 @@ import java.util.concurrent.TimeUnit
 @RunWith(RobolectricTestRunner::class)
 class CalendarChangeReceiverTests {
     private lateinit var context: Context
-    private lateinit var testClock: TestClock
+    private val testClock: TestClock = TestClock()
     private lateinit var contentProviderController: ContentProviderController<SilentSyncCalendarProvider>
-    private lateinit var db: DNDScheduleCalendarCriteriaDb
+    private lateinit var criteriaDb: DNDScheduleCalendarCriteriaDb
+    private lateinit var upcomingEventsDb: UpcomingEventsDb
+
+    private val startTime = testClock.millis() + TimeUnit.MINUTES.toMillis(10)
+    private val endTime = testClock.millis() + TimeUnit.MINUTES.toMillis(15)
+
     @get:Rule
     val instantTaskExecutorRule = InstantTaskExecutorRule()
     @get: Rule
@@ -53,13 +61,20 @@ class CalendarChangeReceiverTests {
     @Before
     fun setup() {
         context = ApplicationProvider.getApplicationContext()
-        testClock = TestClock()
 
         contentProviderController = TestHelpers.buildProvider()
-        db = Room.inMemoryDatabaseBuilder(
+        criteriaDb = Room.inMemoryDatabaseBuilder(
             context,
             DNDScheduleCalendarCriteriaDb::class.java
         ).allowMainThreadQueries().build()
+        upcomingEventsDb = Room.inMemoryDatabaseBuilder(
+            context,
+            UpcomingEventsDb::class.java
+        ).allowMainThreadQueries().build()
+
+        val upcomingEventsManager = UpcomingEventsManagerImpl(
+            context, db = upcomingEventsDb
+        )
         startKoin {
             modules(module {
                 single<Clock> { testClock }
@@ -67,7 +82,10 @@ class CalendarChangeReceiverTests {
                 single<DNDCalendarScheduler> { DNDCalendarSchedulerImpl(
                     context = context,
                     clock = get(),
-                    dndScheduleCalendarCriteriaManager = DNDScheduleCalendarCriteriaManagerImpl(dndScheduleCalendarCriteriaDb = db)
+                    upcomingEventsManager = upcomingEventsManager,
+                    dndScheduleCalendarCriteriaManager = DNDScheduleCalendarCriteriaManagerImpl(
+                        dndScheduleCalendarCriteriaDb = criteriaDb,
+                        upcomingEventsManager = upcomingEventsManager)
                 ) }
                 single<CalendarEventChecker> { CalendarEventCheckerImpl(
                     contentResolver = context.contentResolver,
@@ -79,7 +97,8 @@ class CalendarChangeReceiverTests {
     @After
     fun cleanup() {
         contentProviderController.shutdown()
-        db.close()
+        criteriaDb.close()
+        upcomingEventsDb.close()
     }
 
     @Test
@@ -90,13 +109,7 @@ class CalendarChangeReceiverTests {
         insertEntity(DNDScheduleCalendarCriteriaEntity(likeName = "event"))
         TestHelpers.insert(context, CalendarEventData(1L, "like name event", startTime, endTime))
 
-        val receiver = CalendarChangeReceiver()
-        // intent doesn't matter here
-        val intent = Intent(Intent.ACTION_PROVIDER_CHANGED).apply {
-            data = Uri.parse(CALENDAR_URI)
-        }
-        receiver.onReceive(context, intent)
-        advanceUntilIdle()
+        triggerEvent()
 
         val shadowAlarmManager = shadowOf(context.getSystemService(AlarmManager::class.java))
         val scheduledAlarms = shadowAlarmManager.scheduledAlarms
@@ -106,19 +119,10 @@ class CalendarChangeReceiverTests {
     }
     @Test
     fun eventOccurs_endTimeBiggerThanCurrTime_criteriaPresent_criteriaDoesNotMatch_alarmsNotScheduled() = runTest {
-        val startTime = testClock.millis() + TimeUnit.MINUTES.toMillis(10)
-        val endTime = testClock.millis() + TimeUnit.MINUTES.toMillis(15)
-
         insertEntity(DNDScheduleCalendarCriteriaEntity(likeName = "some"))
         TestHelpers.insert(context, CalendarEventData(1L, "custom event", startTime, endTime))
 
-        val receiver = CalendarChangeReceiver()
-        // intent doesn't matter here
-        val intent = Intent(Intent.ACTION_PROVIDER_CHANGED).apply {
-            data = Uri.parse(CALENDAR_URI)
-        }
-        receiver.onReceive(context, intent)
-        advanceUntilIdle()
+        triggerEvent()
 
         val shadowAlarmManager = shadowOf(context.getSystemService(AlarmManager::class.java))
         val scheduledAlarms = shadowAlarmManager.scheduledAlarms
@@ -126,24 +130,14 @@ class CalendarChangeReceiverTests {
     }
     @Test
     fun eventOccurs_endTimeBiggerThanCurrTime_criteriaNotPresent_alarmsNotScheduled() = runTest {
-        val startTime = testClock.millis() + TimeUnit.MINUTES.toMillis(10)
-        val endTime = testClock.millis() + TimeUnit.MINUTES.toMillis(15)
-
         TestHelpers.insert(context, CalendarEventData(1L, "like name event", startTime, endTime))
 
-        val receiver = CalendarChangeReceiver()
-        // intent doesn't matter here
-        val intent = Intent(Intent.ACTION_PROVIDER_CHANGED).apply {
-            data = Uri.parse(CALENDAR_URI)
-        }
-        receiver.onReceive(context, intent)
-        advanceUntilIdle()
+        triggerEvent()
 
         val shadowAlarmManager = shadowOf(context.getSystemService(AlarmManager::class.java))
         val scheduledAlarms = shadowAlarmManager.scheduledAlarms
         assertTrue(scheduledAlarms.isEmpty())
     }
-
     @Test
     fun eventOccurs_endTimeLowerThanCurrTime_alarmsNotScheduled() = runTest {
         val startTime = testClock.millis() - TimeUnit.MINUTES.toMillis(10)
@@ -152,23 +146,55 @@ class CalendarChangeReceiverTests {
         insertEntity(DNDScheduleCalendarCriteriaEntity(likeName = "event"))
         TestHelpers.insert(context, CalendarEventData(1L, "custom event", startTime, endTime))
 
+        triggerEvent()
+
+        val shadowAlarmManager = shadowOf(context.getSystemService(AlarmManager::class.java))
+        assertTrue(shadowAlarmManager.scheduledAlarms.isEmpty())
+    }
+
+
+    @Test
+    fun eventOccurs_upcomingToggleNotPresent_defaultOptionsUsed() = runTest {
+        insertEntity(DNDScheduleCalendarCriteriaEntity(likeName = "event"))
+        TestHelpers.insert(context, CalendarEventData(1L, "custom event", startTime, endTime))
+
+        val upcomingEventData = UpcomingEventData(1L, "event", startTime, endTime, scheduleDndOn = false, scheduleDndOff = false)
+        triggerEvent()
+
+        val savedUpcomingEvent = upcomingEventsDb.dao().getUpcomingEvents().first().first { it.id == upcomingEventData.id }
+        assertTrue(savedUpcomingEvent.scheduleDndOn)
+        assertTrue(savedUpcomingEvent.scheduleDndOff)
+    }
+    @Test
+    fun eventOccurs_upcomingTogglePresent_doNotSchedule_savedOptionsUsed() = runTest {
+        insertEntity(DNDScheduleCalendarCriteriaEntity(likeName = "event"))
+        TestHelpers.insert(context, CalendarEventData(1L, "custom event", startTime, endTime))
+
+        val upcomingEventData = UpcomingEventData(1L, "event", startTime, endTime, scheduleDndOn = false, scheduleDndOff = false)
+        upcomingEventsDb.dao().insert(upcomingEventData)
+        triggerEvent()
+
+        val savedUpcomingEvent = upcomingEventsDb.dao().getUpcomingEvents().first().first { it.id == upcomingEventData.id }
+        assertEquals(upcomingEventData.scheduleDndOn, savedUpcomingEvent.scheduleDndOn)
+        assertEquals(upcomingEventData.scheduleDndOff, savedUpcomingEvent.scheduleDndOff)
+    }
+
+    private suspend fun insertEntity(entity: DNDScheduleCalendarCriteriaEntity
+    =DNDScheduleCalendarCriteriaEntity(likeName = "like name event")) {
+        criteriaDb.dao().apply {
+            replaceCriteria(entity)
+            assertEquals(entity, criteriaFlow().first())
+        }
+    }
+
+    private fun TestScope.triggerEvent() {
         val receiver = CalendarChangeReceiver()
         // intent doesn't matter here
         val intent = Intent(Intent.ACTION_PROVIDER_CHANGED).apply {
             data = Uri.parse(CALENDAR_URI)
         }
         receiver.onReceive(context, intent)
-
-        val shadowAlarmManager = shadowOf(context.getSystemService(AlarmManager::class.java))
-        assertTrue(shadowAlarmManager.scheduledAlarms.isEmpty())
-    }
-
-    private suspend fun insertEntity(entity: DNDScheduleCalendarCriteriaEntity
-    =DNDScheduleCalendarCriteriaEntity(likeName = "like name event")) {
-        db.dao().apply {
-            replaceCriteria(entity)
-            assertEquals(entity, criteriaFlow().first())
-        }
+        advanceUntilIdle()
     }
 
     private companion object {

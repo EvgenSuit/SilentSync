@@ -12,5 +12,6 @@ interface UpcomingEventsManager {
     suspend fun removeDndOffToggle(id: Long)
 
     suspend fun removeUpcomingEvent(id: Long)
+    suspend fun deleteAllEvents()
     fun upcomingEventsFlow(): Flow<List<UpcomingEventData>>
 }
