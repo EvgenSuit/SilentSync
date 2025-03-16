@@ -44,8 +44,7 @@ val dndCalendarImplKoinModule = module {
                 DNDScheduleCalendarCriteriaDb::class.java,
                 "dnd-schedule-calendar-db"
             ).fallbackToDestructiveMigration()
-                .build(),
-            upcomingEventsManager = get()
+                .build()
         )
     }
     single<DNDCalendarScheduler> { DNDCalendarSchedulerImpl(clock = get(),

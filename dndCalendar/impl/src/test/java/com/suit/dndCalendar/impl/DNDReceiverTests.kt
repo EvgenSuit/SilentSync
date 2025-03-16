@@ -12,7 +12,7 @@ import com.suit.dndCalendar.impl.data.DNDActionType
 import com.suit.dndCalendar.impl.data.UpcomingEventsManagerImpl
 import com.suit.dndCalendar.impl.data.upcomingEventsDb.UpcomingEventsDb
 import com.suit.dndCalendar.impl.receivers.DNDReceiver
-import com.suit.dndCalendar.impl.helpers.SilentSyncCalendarProvider
+import com.suit.dndCalendar.impl.helpers.EventCalendarProvider
 import com.suit.dndCalendar.impl.helpers.TestHelpers
 import com.suit.dndcalendar.api.CalendarEventChecker
 import com.suit.dndcalendar.api.UpcomingEventData
@@ -34,7 +34,6 @@ import org.koin.core.context.startKoin
 import org.koin.dsl.module
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.android.controller.ContentProviderController
-import org.robolectric.annotation.LooperMode
 import java.time.Clock
 
 
@@ -42,7 +41,7 @@ import java.time.Clock
 class DNDReceiverTests {
     private lateinit var context: Context
     private lateinit var clock: TestClock
-    private lateinit var contentProviderController: ContentProviderController<SilentSyncCalendarProvider>
+    private lateinit var contentProviderController: ContentProviderController<EventCalendarProvider>
     private lateinit var upcomingEventsDb: UpcomingEventsDb
 
     @get:Rule
@@ -98,7 +97,7 @@ class DNDReceiverTests {
 
     @Test
     fun eventExists_dndToggled() = runTest {
-        TestHelpers.insert(context, CalendarEventData(1L, "some title", clock.millis(), clock.millis()+1))
+        TestHelpers.insertCalendarData(context, CalendarEventData(1L, "some title", clock.millis(), clock.millis()+1))
 
         val receiver = DNDReceiver()
         val intent = Intent().apply {
@@ -116,7 +115,7 @@ class DNDReceiverTests {
     @Test
     fun eventExists_upcomingEventExists_dndTurnedOff() = runTest {
         upcomingEventsDb.dao().insert(UpcomingEventData(id = 1L, title = "", startTime = 0, endTime = 0))
-        TestHelpers.insert(context, CalendarEventData(1L, "some title", clock.millis(), clock.millis()+1))
+        TestHelpers.insertCalendarData(context, CalendarEventData(1L, "some title", clock.millis(), clock.millis()+1))
 
         val receiver = DNDReceiver()
         val turnOffIntent = Intent().apply {
@@ -141,7 +140,7 @@ class DNDReceiverTests {
     @Test
     fun eventExists_upcomingEventDoesNotExist_dndNotTurnedOff() = runTest {
         assertTrue(upcomingEventsDb.dao().getUpcomingEvents().first().isEmpty())
-        TestHelpers.insert(context, CalendarEventData(1L, "some title", clock.millis(), clock.millis()+1))
+        TestHelpers.insertCalendarData(context, CalendarEventData(1L, "some title", clock.millis(), clock.millis()+1))
 
         val receiver = DNDReceiver()
         val turnOffIntent = Intent().apply {

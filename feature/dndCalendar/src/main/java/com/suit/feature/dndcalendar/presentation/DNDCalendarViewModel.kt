@@ -53,7 +53,8 @@ class DNDCalendarViewModel(
     fun handleIntent(intent: DNDCalendarIntent) {
         when (intent) {
             DNDCalendarIntent.GetCriteria -> fetchCriteria()
-            is DNDCalendarIntent.InputCriteria -> inputCriteria(intent.dndCalendarCriteriaInput)
+            is DNDCalendarIntent.InputCriteria -> inputCriteriaPreview(intent.dndCalendarCriteriaInput)
+            is DNDCalendarIntent.DeleteCriteria -> deleteCriteriaPreview(intent.dndCalendarCriteriaDeletion)
             DNDCalendarIntent.Schedule -> schedule()
 
             is DNDCalendarIntent.ToggleDNDOn -> toggleDNDMode(true, intent.id, intent.set)
@@ -85,14 +86,35 @@ class DNDCalendarViewModel(
         }
     }
 
-    private fun inputCriteria(criteriaInput: DNDCalendarCriteriaInput) {
+    private fun inputCriteriaPreview(criteriaInput: DNDCalendarCriteriaInput) {
         val criteria = uiState.value.criteria
 
         val updatedCriteria =
             when (criteriaInput) {
-                is DNDCalendarCriteriaInput.NameLike -> criteria?.copy(likeName = criteriaInput.nameLike)
-                    ?: DNDScheduleCalendarCriteria(criteriaInput.nameLike)
+                is DNDCalendarCriteriaInput.NameLike -> criteria?.copy(likeNames = criteria.likeNames + criteriaInput.nameLike.trim())
+                    ?: DNDScheduleCalendarCriteria(
+                        likeNames = listOf(criteriaInput.nameLike),
+                        attendees = listOf())
+                is DNDCalendarCriteriaInput.Participant -> criteria?.copy(
+                    attendees = criteria.attendees + criteriaInput.participantName.trim()
+                ) ?: DNDScheduleCalendarCriteria(
+                    likeNames = listOf(),
+                    attendees = listOf(criteriaInput.participantName))
             }
+        _uiState.update {
+            it.copy(criteria = updatedCriteria)
+        }
+    }
+
+    private fun deleteCriteriaPreview(criteriaDeletion: DNDCalendarCriteriaDeletion) {
+        val criteria = uiState.value.criteria
+
+        val updatedCriteria = when (criteriaDeletion) {
+            is DNDCalendarCriteriaDeletion.NameLike ->
+                criteria?.copy(likeNames = criteria.likeNames.filterNot { it == criteriaDeletion.nameLike })
+            is DNDCalendarCriteriaDeletion.Participant ->
+                criteria?.copy(attendees = criteria.attendees.filterNot { it == criteriaDeletion.participantName })
+        }
         _uiState.update {
             it.copy(criteria = updatedCriteria)
         }
@@ -105,6 +127,7 @@ class DNDCalendarViewModel(
                 dndCalendarScheduler.schedule()
                 _uiState.update { it.copy(eventsSyncResult = CustomResult.Success) }
             } catch (e: Exception) {
+                println(e)
                 _uiState.update { it.copy(eventsSyncResult = CustomResult.Error) }
                 if (e !is NoCalendarCriteriaFound) {
                     _uiEvents.emit(DNDCalendarUIEvent.ShowSnackbar(UIText.StringResource(com.suit.utility.R.string.could_not_sync_events)))
@@ -116,16 +139,17 @@ class DNDCalendarViewModel(
     private fun schedule() {
         viewModelScope.launch(dispatcher) {
             try {
+                _uiState.update { it.copy(eventsSyncResult = CustomResult.InProgress) }
                 uiState.value.criteria?.let {
-                    _uiState.update { it.copy(eventsSyncResult = CustomResult.InProgress) }
                     dndScheduleCalendarCriteriaManager.changeCriteria(it)
-                    dndCalendarScheduler.schedule()
-                    _uiState.update { it.copy(eventsSyncResult = CustomResult.Success) }
-                    _uiEvents.emit(DNDCalendarUIEvent.Unfocus)
-                    _uiEvents.emit(DNDCalendarUIEvent.ShowSnackbar(UIText.StringResource(R.string.successfully_synced_events)))
                 }
+                dndCalendarScheduler.schedule()
+                _uiState.update { it.copy(eventsSyncResult = CustomResult.Success) }
+                _uiEvents.emit(DNDCalendarUIEvent.Unfocus)
+                _uiEvents.emit(DNDCalendarUIEvent.ShowSnackbar(UIText.StringResource(R.string.successfully_synced_events)))
             } catch (e: Exception) {
-                _uiEvents.emit(DNDCalendarUIEvent.ShowSnackbar(UIText.StringResource(R.string.could_not_update_criteria)))
+                println(e)
+                _uiEvents.emit(DNDCalendarUIEvent.ShowSnackbar(UIText.StringResource(com.suit.utility.R.string.could_not_sync_events)))
                 _uiState.update { it.copy(eventsSyncResult = CustomResult.Error) }
             }
         }

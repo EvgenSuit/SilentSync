@@ -15,17 +15,20 @@ import com.suit.dndCalendar.impl.data.UpcomingEventsManagerImpl
 import com.suit.dndCalendar.impl.data.criteriaDb.DNDScheduleCalendarCriteriaDb
 import com.suit.dndCalendar.impl.data.criteriaDb.DNDScheduleCalendarCriteriaEntity
 import com.suit.dndCalendar.impl.data.upcomingEventsDb.UpcomingEventsDb
-import com.suit.dndCalendar.impl.helpers.SilentSyncCalendarProvider
+import com.suit.dndCalendar.impl.helpers.EventCalendarProvider
 import com.suit.dndCalendar.impl.helpers.TestHelpers
 import com.suit.dndCalendar.impl.receivers.CalendarChangeReceiver
 import com.suit.dndcalendar.api.CalendarEventChecker
 import com.suit.dndcalendar.api.DNDCalendarScheduler
 import com.suit.dndcalendar.api.UpcomingEventData
+import com.suit.utility.NoCalendarCriteriaFound
 import com.suit.utility.test.MainDispatcherRule
 import junit.framework.TestCase.assertEquals
+import junit.framework.TestCase.assertFalse
 import junit.framework.TestCase.assertTrue
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -41,14 +44,16 @@ import org.robolectric.Shadows.shadowOf
 import org.robolectric.android.controller.ContentProviderController
 import java.time.Clock
 import java.util.concurrent.TimeUnit
+import kotlin.test.assertFailsWith
 
 @RunWith(RobolectricTestRunner::class)
 class CalendarChangeReceiverTests {
     private lateinit var context: Context
     private val testClock: TestClock = TestClock()
-    private lateinit var contentProviderController: ContentProviderController<SilentSyncCalendarProvider>
+    private lateinit var contentProviderController: ContentProviderController<EventCalendarProvider>
     private lateinit var criteriaDb: DNDScheduleCalendarCriteriaDb
     private lateinit var upcomingEventsDb: UpcomingEventsDb
+    private lateinit var dndCalendarScheduler: DNDCalendarSchedulerImpl
 
     private val startTime = testClock.millis() + TimeUnit.MINUTES.toMillis(10)
     private val endTime = testClock.millis() + TimeUnit.MINUTES.toMillis(15)
@@ -75,18 +80,19 @@ class CalendarChangeReceiverTests {
         val upcomingEventsManager = UpcomingEventsManagerImpl(
             context, db = upcomingEventsDb
         )
+        dndCalendarScheduler = DNDCalendarSchedulerImpl(
+            context = context,
+            clock = testClock,
+            upcomingEventsManager = upcomingEventsManager,
+            dndScheduleCalendarCriteriaManager = DNDScheduleCalendarCriteriaManagerImpl(
+                dndScheduleCalendarCriteriaDb = criteriaDb
+            )
+        )
         startKoin {
             modules(module {
                 single<Clock> { testClock }
                 single<CoroutineScope> { TestScope() }
-                single<DNDCalendarScheduler> { DNDCalendarSchedulerImpl(
-                    context = context,
-                    clock = get(),
-                    upcomingEventsManager = upcomingEventsManager,
-                    dndScheduleCalendarCriteriaManager = DNDScheduleCalendarCriteriaManagerImpl(
-                        dndScheduleCalendarCriteriaDb = criteriaDb,
-                        upcomingEventsManager = upcomingEventsManager)
-                ) }
+                single<DNDCalendarScheduler> { dndCalendarScheduler }
                 single<CalendarEventChecker> { CalendarEventCheckerImpl(
                     contentResolver = context.contentResolver,
                     clock = testClock) }
@@ -106,21 +112,17 @@ class CalendarChangeReceiverTests {
         val startTime = testClock.millis() + TimeUnit.MINUTES.toMillis(10)
         val endTime = testClock.millis() + TimeUnit.MINUTES.toMillis(15)
 
-        insertEntity(DNDScheduleCalendarCriteriaEntity(likeName = "event"))
-        TestHelpers.insert(context, CalendarEventData(1L, "like name event", startTime, endTime))
+        insertEntity(DNDScheduleCalendarCriteriaEntity(likeNames = listOf("event")))
+        TestHelpers.insertCalendarData(context, CalendarEventData(1L, "like name event", startTime, endTime))
 
         triggerEvent()
 
-        val shadowAlarmManager = shadowOf(context.getSystemService(AlarmManager::class.java))
-        val scheduledAlarms = shadowAlarmManager.scheduledAlarms
-        val triggerAtMs = scheduledAlarms.map { it.triggerAtMs }
-        assertEquals(startTime, triggerAtMs[0])
-        assertEquals(endTime, triggerAtMs[1])
+        assertDNDScheduled(startTime, endTime)
     }
     @Test
     fun eventOccurs_endTimeBiggerThanCurrTime_criteriaPresent_criteriaDoesNotMatch_alarmsNotScheduled() = runTest {
-        insertEntity(DNDScheduleCalendarCriteriaEntity(likeName = "some"))
-        TestHelpers.insert(context, CalendarEventData(1L, "custom event", startTime, endTime))
+        insertEntity(DNDScheduleCalendarCriteriaEntity(likeNames = listOf("some")))
+        TestHelpers.insertCalendarData(context, CalendarEventData(1L, "custom event", startTime, endTime))
 
         triggerEvent()
 
@@ -130,7 +132,7 @@ class CalendarChangeReceiverTests {
     }
     @Test
     fun eventOccurs_endTimeBiggerThanCurrTime_criteriaNotPresent_alarmsNotScheduled() = runTest {
-        TestHelpers.insert(context, CalendarEventData(1L, "like name event", startTime, endTime))
+        TestHelpers.insertCalendarData(context, CalendarEventData(1L, "like name event", startTime, endTime))
 
         triggerEvent()
 
@@ -143,8 +145,8 @@ class CalendarChangeReceiverTests {
         val startTime = testClock.millis() - TimeUnit.MINUTES.toMillis(10)
         val endTime = testClock.millis() - TimeUnit.MINUTES.toMillis(5)
 
-        insertEntity(DNDScheduleCalendarCriteriaEntity(likeName = "event"))
-        TestHelpers.insert(context, CalendarEventData(1L, "custom event", startTime, endTime))
+        insertEntity(DNDScheduleCalendarCriteriaEntity(likeNames = listOf("event")))
+        TestHelpers.insertCalendarData(context, CalendarEventData(1L, "custom event", startTime, endTime))
 
         triggerEvent()
 
@@ -152,11 +154,107 @@ class CalendarChangeReceiverTests {
         assertTrue(shadowAlarmManager.scheduledAlarms.isEmpty())
     }
 
+    @Test
+    fun eventOccurs_eventsNotMatchingCriteriaPresent_eventsRemoved() = runTest {
+        insertEntity(DNDScheduleCalendarCriteriaEntity(likeNames = listOf("event")))
+        val event1 = CalendarEventData(1L, "custom event", startTime, endTime)
+        val event2 = CalendarEventData(2L, "some", startTime, endTime)
+        val event3 = CalendarEventData(3L, "non-matching", startTime, endTime)
+        TestHelpers.apply {
+            insertCalendarData(context, event1)
+            insertCalendarData(context, event2)
+            insertCalendarData(context, event3)
+        }
+
+        val upcomingEventData = event1.toUpcomingEvent()
+        val upcomingEventData2 = event2.toUpcomingEvent()
+        val upcomingEventData3 = event3.toUpcomingEvent()
+        upcomingEventsDb.dao().apply {
+            insert(upcomingEventData)
+            insert(upcomingEventData2)
+            insert(upcomingEventData3)
+        }
+        triggerEvent()
+
+        val savedUpcomingEvents = upcomingEventsDb.dao().getUpcomingEvents().first()
+        assertTrue(savedUpcomingEvents.contains(upcomingEventData))
+        assertFalse(savedUpcomingEvents.contains(upcomingEventData2))
+        assertFalse(savedUpcomingEvents.contains(upcomingEventData3))
+    }
+    @Test
+    fun eventOccurs_allUpcomingEventsMatchCriteria_noEventsRemoved() = runTest {
+        insertEntity(DNDScheduleCalendarCriteriaEntity(likeNames = listOf("event")))
+        val event1 = CalendarEventData(1L, "custom event", startTime, endTime)
+        val event2 = CalendarEventData(2L, "some event", startTime, endTime)
+        val event3 = CalendarEventData(3L, "some event 2", startTime, endTime)
+        TestHelpers.apply {
+            insertCalendarData(context, event1)
+            insertCalendarData(context, event2)
+            insertCalendarData(context, event3)
+        }
+
+        val upcomingEventData = event1.toUpcomingEvent()
+        val upcomingEventData2 = event2.toUpcomingEvent()
+        val upcomingEventData3 = event3.toUpcomingEvent()
+        upcomingEventsDb.dao().apply {
+            insert(upcomingEventData)
+            insert(upcomingEventData2)
+            insert(upcomingEventData3)
+        }
+        triggerEvent()
+
+        val savedUpcomingEvents = upcomingEventsDb.dao().getUpcomingEvents().first()
+        assertTrue(savedUpcomingEvents.contains(upcomingEventData))
+        assertTrue(savedUpcomingEvents.contains(upcomingEventData2))
+        assertTrue(savedUpcomingEvents.contains(upcomingEventData3))
+    }
+
+    @Test
+    fun sync_criteriaEmpty_upcomingEventsEmpty_exceptionThrown() = runTest {
+        assertFailsWith<NoCalendarCriteriaFound> { dndCalendarScheduler.schedule() }
+    }
+    @Test
+    fun sync_criteriaEmpty_upcomingEventsNotEmpty_upcomingEventsRemovedExceptionNotThrown() = runTest {
+        val event1 = CalendarEventData(1L, "custom event", startTime, endTime)
+        upcomingEventsDb.dao().insert(event1.toUpcomingEvent())
+
+        dndCalendarScheduler.schedule()
+
+        assertTrue(upcomingEventsDb.dao().getUpcomingEvents().firstOrNull().isNullOrEmpty())
+    }
+
+    @Test
+    fun sync_attendeeCriteriaPresent_criteriaMatched_scheduled() = runTest {
+        insertEntity(DNDScheduleCalendarCriteriaEntity(
+            participants = listOf("evgen")
+        ))
+        val calendarEventData = CalendarEventData(1L, "event", startTime, endTime, listOf("evgen"))
+        TestHelpers.insertCalendarData(context, calendarEventData)
+
+        triggerEvent()
+
+        assertDNDScheduled()
+        assertEquals(calendarEventData.toUpcomingEvent(), upcomingEventsDb.dao().getUpcomingEvents().first().first())
+    }
+    @Test
+    fun sync_multipleCriteriaPresent_criteriaMatched_scheduled() = runTest {
+        insertEntity(DNDScheduleCalendarCriteriaEntity(likeNames = listOf("event"),
+            participants = listOf("evgen")
+        ))
+        val calendarEventData = CalendarEventData(1L, "event", startTime, endTime, listOf("evgen"))
+        TestHelpers.insertCalendarData(context, calendarEventData)
+
+        triggerEvent()
+
+        assertDNDScheduled()
+        val u = upcomingEventsDb.dao().getUpcomingEvents().first().first()
+        assertEquals(calendarEventData.toUpcomingEvent(), u)
+    }
 
     @Test
     fun eventOccurs_upcomingToggleNotPresent_defaultOptionsUsed() = runTest {
-        insertEntity(DNDScheduleCalendarCriteriaEntity(likeName = "event"))
-        TestHelpers.insert(context, CalendarEventData(1L, "custom event", startTime, endTime))
+        insertEntity(DNDScheduleCalendarCriteriaEntity(likeNames = listOf("event")))
+        TestHelpers.insertCalendarData(context, CalendarEventData(1L, "custom event", startTime, endTime))
 
         val upcomingEventData = UpcomingEventData(1L, "event", startTime, endTime, scheduleDndOn = false, scheduleDndOff = false)
         triggerEvent()
@@ -167,8 +265,8 @@ class CalendarChangeReceiverTests {
     }
     @Test
     fun eventOccurs_upcomingTogglePresent_doNotSchedule_savedOptionsUsed() = runTest {
-        insertEntity(DNDScheduleCalendarCriteriaEntity(likeName = "event"))
-        TestHelpers.insert(context, CalendarEventData(1L, "custom event", startTime, endTime))
+        insertEntity(DNDScheduleCalendarCriteriaEntity(likeNames = listOf("event")))
+        TestHelpers.insertCalendarData(context, CalendarEventData(1L, "custom event", startTime, endTime))
 
         val upcomingEventData = UpcomingEventData(1L, "event", startTime, endTime, scheduleDndOn = false, scheduleDndOff = false)
         upcomingEventsDb.dao().insert(upcomingEventData)
@@ -180,7 +278,7 @@ class CalendarChangeReceiverTests {
     }
 
     private suspend fun insertEntity(entity: DNDScheduleCalendarCriteriaEntity
-    =DNDScheduleCalendarCriteriaEntity(likeName = "like name event")) {
+    =DNDScheduleCalendarCriteriaEntity(likeNames = listOf("like name event"))) {
         criteriaDb.dao().apply {
             replaceCriteria(entity)
             assertEquals(entity, criteriaFlow().first())
@@ -195,6 +293,14 @@ class CalendarChangeReceiverTests {
         }
         receiver.onReceive(context, intent)
         advanceUntilIdle()
+    }
+
+    private fun assertDNDScheduled(start: Long = startTime, end: Long = endTime) {
+        val shadowAlarmManager = shadowOf(context.getSystemService(AlarmManager::class.java))
+        val scheduledAlarms = shadowAlarmManager.scheduledAlarms
+        val triggerAtMs = scheduledAlarms.map { it.triggerAtMs }
+        assertEquals(start, triggerAtMs[0])
+        assertEquals(end, triggerAtMs[1])
     }
 
     private companion object {
