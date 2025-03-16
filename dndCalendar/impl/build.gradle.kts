@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.ksp.plugin)
+    alias(libs.plugins.androidx.room)
 }
 
 android {
@@ -13,6 +14,9 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles("consumer-rules.pro")
+    }
+    room {
+        schemaDirectory("$projectDir/schemas")
     }
     buildTypes {
         release {

@@ -6,5 +6,6 @@ import androidx.room.PrimaryKey
 @Entity
 internal data class DNDScheduleCalendarCriteriaEntity(
     @PrimaryKey val id: Long = 1,
-    val likeNames: List<String>
+    val likeNames: List<String> = listOf(),
+    val participants: List<String> = listOf()
 )

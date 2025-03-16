@@ -7,6 +7,7 @@ data class CalendarEventData(
     val title: String,
     val startTime: Long,
     val endTime: Long,
+    val attendees: List<String> = listOf(),
     val deleted: Boolean = false
 ) {
     fun toUpcomingEvent() =

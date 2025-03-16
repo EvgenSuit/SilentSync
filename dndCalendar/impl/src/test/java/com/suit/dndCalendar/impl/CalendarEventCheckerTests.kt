@@ -5,7 +5,7 @@ import androidx.test.core.app.ApplicationProvider
 import com.suit.dndCalendar.impl.data.CalendarEventData
 import com.suit.dndCalendar.impl.data.CalendarEventCheckerImpl
 import com.suit.dndcalendar.api.CalendarEventChecker
-import com.suit.dndCalendar.impl.helpers.SilentSyncCalendarProvider
+import com.suit.dndCalendar.impl.helpers.EventCalendarProvider
 import com.suit.dndCalendar.impl.helpers.TestHelpers
 import junit.framework.TestCase.assertFalse
 import junit.framework.TestCase.assertTrue
@@ -22,7 +22,7 @@ class CalendarEventCheckerTests {
     private lateinit var calendarEventChecker: CalendarEventChecker
     private lateinit var context: Context
     private lateinit var clock: TestClock
-    private lateinit var contentProviderController: ContentProviderController<SilentSyncCalendarProvider>
+    private lateinit var contentProviderController: ContentProviderController<EventCalendarProvider>
 
     @Before
     fun setup() {
@@ -43,30 +43,30 @@ class CalendarEventCheckerTests {
 
     @Test
     fun doTurnDNDOn_startAtCurrent_true() {
-        TestHelpers.insert(context, CalendarEventData(1L, "custom event", clock.millis(), clock.millis() + TimeUnit.MINUTES.toMillis(5)))
+        TestHelpers.insertCalendarData(context, CalendarEventData(1L, "custom event", clock.millis(), clock.millis() + TimeUnit.MINUTES.toMillis(5)))
         assertTrue(calendarEventChecker.doTurnDNDon(1L))
     }
     @Test
     fun doTurnDNDOn_startBeforeCurrent_true() {
-        TestHelpers.insert(context, CalendarEventData(1L, "custom event", clock.millis()-10, clock.millis() + TimeUnit.MINUTES.toMillis(5)))
+        TestHelpers.insertCalendarData(context, CalendarEventData(1L, "custom event", clock.millis()-10, clock.millis() + TimeUnit.MINUTES.toMillis(5)))
         assertTrue(calendarEventChecker.doTurnDNDon(1L))
     }
     @Test
     fun doTurnDNDOn_false() {
-        TestHelpers.insert(context, CalendarEventData(1L, "custom event", clock.millis()+1, clock.millis() + TimeUnit.MINUTES.toMillis(5)))
+        TestHelpers.insertCalendarData(context, CalendarEventData(1L, "custom event", clock.millis()+1, clock.millis() + TimeUnit.MINUTES.toMillis(5)))
         assertFalse(calendarEventChecker.doTurnDNDon(1L))
     }
 
     @Test
     fun doTurnDNDOff_true() {
         val delay = TimeUnit.MINUTES.toMillis(5)
-        TestHelpers.insert(context, CalendarEventData(1L, "custom event", clock.millis(), clock.millis() + delay))
+        TestHelpers.insertCalendarData(context, CalendarEventData(1L, "custom event", clock.millis(), clock.millis() + delay))
         clock.advance(delay)
         assertTrue(calendarEventChecker.doTurnDNDoff(1L))
     }
     @Test
     fun doTurnDNDOff_scheduleToPast_false() {
-        TestHelpers.insert(context, CalendarEventData(1L, "custom event", clock.millis(), clock.millis() - TimeUnit.MINUTES.toMillis(5)))
+        TestHelpers.insertCalendarData(context, CalendarEventData(1L, "custom event", clock.millis(), clock.millis() - TimeUnit.MINUTES.toMillis(5)))
         assertFalse(calendarEventChecker.doTurnDNDoff(1L))
     }
 }

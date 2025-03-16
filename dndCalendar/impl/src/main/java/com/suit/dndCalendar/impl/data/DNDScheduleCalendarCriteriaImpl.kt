@@ -4,9 +4,7 @@ import com.suit.dndCalendar.impl.data.criteriaDb.DNDScheduleCalendarCriteriaDb
 import com.suit.dndCalendar.impl.data.criteriaDb.DNDScheduleCalendarCriteriaEntity
 import com.suit.dndcalendar.api.DNDScheduleCalendarCriteria
 import com.suit.dndcalendar.api.DNDScheduleCalendarCriteriaManager
-import com.suit.dndcalendar.api.UpcomingEventsManager
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 internal class DNDScheduleCalendarCriteriaManagerImpl(
@@ -16,7 +14,8 @@ internal class DNDScheduleCalendarCriteriaManagerImpl(
     override suspend fun changeCriteria(criteria: DNDScheduleCalendarCriteria) {
         dndScheduleCalendarCriteriaDb.dao().replaceCriteria(
             DNDScheduleCalendarCriteriaEntity(
-                likeNames = criteria.likeNames
+                likeNames = criteria.likeNames,
+                participants = criteria.attendees
             )
         )
     }
@@ -25,7 +24,8 @@ internal class DNDScheduleCalendarCriteriaManagerImpl(
         dndScheduleCalendarCriteriaDb.dao().criteriaFlow().map { criteria ->
             criteria?.let {
                 DNDScheduleCalendarCriteria(
-                    likeNames = it.likeNames
+                    likeNames = it.likeNames,
+                    attendees = it.participants
                 )
             }
         }
