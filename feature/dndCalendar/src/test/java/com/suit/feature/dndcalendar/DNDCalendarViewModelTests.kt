@@ -8,6 +8,7 @@ import com.suit.dndcalendar.api.UpcomingEventData
 import com.suit.dndcalendar.api.UpcomingEventsManager
 import com.suit.feature.dndcalendar.presentation.DNDCalendarIntent
 import com.suit.feature.dndcalendar.presentation.DNDCalendarViewModel
+import com.suit.feature.dndcalendar.presentation.ui.DNDCalendarCriteriaDeletion
 import com.suit.utility.NoCalendarCriteriaFound
 import com.suit.utility.test.MainDispatcherRule
 import com.suit.utility.ui.CustomResult
@@ -20,7 +21,6 @@ import junit.framework.TestCase.assertEquals
 import junit.framework.TestCase.assertTrue
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -36,7 +36,7 @@ class DNDCalendarViewModelTests {
     @get: Rule
     val mainDispatcherRule = MainDispatcherRule()
 
-    private val criteria = DNDScheduleCalendarCriteria(likeName = "event")
+    private val criteria = DNDScheduleCalendarCriteria(likeNames = listOf("event"))
     private val upcomingEventData = UpcomingEventData(1L, "Some event", 0, 0)
 
     private fun setup(
@@ -150,6 +150,22 @@ class DNDCalendarViewModelTests {
         assertEquals(CustomResult.Success, viewModel.uiState.value.eventsSyncResult)
         coVerify(exactly = 1) { dndScheduleCalendarCriteriaManager.changeCriteria(criteria) }
         coVerify(exactly = 2) { dndCalendarScheduler.schedule() }
+    }
+
+    @Test
+    fun deleteCriteria_criteriaDeleted() = runTest {
+        setup(isCriteriaPresent = true)
+
+        viewModel.uiState.test {
+            skipItems(1)
+            assertEquals(awaitItem().criteria, criteria)
+            viewModel.apply {
+                criteria.likeNames.forEach {
+                    handleIntent(DNDCalendarIntent.DeleteCriteria(DNDCalendarCriteriaDeletion.NameLike(it)))
+                }
+            }
+            assertTrue(awaitItem().criteria?.isEmpty() == true)
+        }
     }
 
     @Test

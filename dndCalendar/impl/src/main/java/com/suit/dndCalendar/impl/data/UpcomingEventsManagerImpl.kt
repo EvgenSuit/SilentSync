@@ -8,6 +8,7 @@ import com.suit.dndCalendar.impl.data.upcomingEventsDb.UpcomingEventsDb
 import com.suit.dndCalendar.impl.receivers.DNDReceiver
 import com.suit.dndcalendar.api.UpcomingEventData
 import com.suit.dndcalendar.api.UpcomingEventsManager
+import kotlinx.coroutines.flow.firstOrNull
 
 internal class UpcomingEventsManagerImpl(
     private val context: Context,
@@ -56,10 +57,6 @@ internal class UpcomingEventsManagerImpl(
             cancel(dndOffPendingIntent)
         }
         db.dao().delete(id)
-    }
-
-    override suspend fun deleteAllEvents() {
-        db.dao().deleteAll()
     }
 
     override fun upcomingEventsFlow() = db.dao().getUpcomingEvents()

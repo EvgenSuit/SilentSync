@@ -38,12 +38,15 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.suit.dndcalendar.api.UpcomingEventData
 import com.suit.feature.dndcalendar.R
+import com.suit.feature.dndcalendar.presentation.DNDCalendarCriteriaInput
 import com.suit.feature.dndcalendar.presentation.DNDCalendarIntent
 import com.suit.feature.dndcalendar.presentation.DNDCalendarUIState
 import com.suit.feature.dndcalendar.presentation.DNDCalendarViewModel
 import com.suit.feature.dndcalendar.presentation.ui.components.DNDCriteriaComponent
 import com.suit.feature.dndcalendar.presentation.ui.components.DNDPermissionComponent
 import com.suit.feature.dndcalendar.presentation.ui.components.UpcomingEventComponent
+import com.suit.feature.dndcalendar.presentation.ui.components.UpcomingEventsColumn
+import com.suit.utility.ui.CommonButton
 import com.suit.utility.ui.CustomResult
 import com.suit.utility.ui.DNDCalendarUIEvent
 import com.suit.utility.ui.LocalSnackbarController
@@ -89,6 +92,7 @@ fun DNDCalendarContent(
     uiState: DNDCalendarUIState,
     onIntent: (DNDCalendarIntent) -> Unit
 ) {
+    // TODO remove this refresh box
     PullToRefreshBox(
         isRefreshing = uiState.criteriaFetchResult.isInProgress(),
         onRefresh = { onIntent(DNDCalendarIntent.GetCriteria) }
@@ -117,9 +121,20 @@ fun DNDCalendarContent(
             )
             Spacer(Modifier.height(10.dp))
             DNDCriteriaComponent(
-                criteria = uiState.criteria,
-                onInput = { onIntent(DNDCalendarIntent.InputCriteria(it)) },
-                onSync = { onIntent(DNDCalendarIntent.Schedule) }
+                labelId = R.string.like_name_criteria_placeholder,
+                criteria = uiState.criteria?.likeNames,
+                onInput = { onIntent(DNDCalendarIntent.InputCriteria(
+                    DNDCalendarCriteriaInput.NameLike(it)
+                )) },
+                onDelete = {
+                    onIntent(DNDCalendarIntent.DeleteCriteria(
+                        DNDCalendarCriteriaDeletion.NameLike(it)
+                    ))
+                }
+            )
+            CommonButton(
+                text = stringResource(R.string.sync_events),
+                onClick = { onIntent(DNDCalendarIntent.Schedule) }
             )
 
             Box(
@@ -130,56 +145,11 @@ fun DNDCalendarContent(
             }
 
             Spacer(Modifier.height(10.dp))
-            Text(
-                stringResource(R.string.upcoming_events),
-                style = MaterialTheme.typography.titleSmall
+            UpcomingEventsColumn(
+                isEventSyncInProgress = uiState.eventsSyncResult.isInProgress(),
+                upcomingEvents = uiState.upcomingEvents,
+                onIntent = onIntent
             )
-            Crossfade(uiState.eventsSyncResult.isInProgress()) { isInProgress ->
-                if (isInProgress) {
-                    LinearProgressIndicator(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(5.dp)
-                            .testTag("ProgressIndicator")
-                    )
-                } else Spacer(Modifier.height(5.dp))
-            }
-            Crossfade(uiState.upcomingEvents.isEmpty()) { isEventsListEmpty ->
-                if (isEventsListEmpty) {
-                    Text(stringResource(R.string.nothing_here_yet))
-                } else {
-                    LazyColumn(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(400.dp)
-                            .testTag("UpcomingEventsColumn")
-                    ) {
-                        items(uiState.upcomingEvents, key = { it.id }) { event ->
-                            UpcomingEventComponent(
-                                event = event,
-                                onDndOnClick = { id, set ->
-                                    onIntent(
-                                        DNDCalendarIntent.ToggleDNDOn(
-                                            id,
-                                            set
-                                        )
-                                    )
-                                },
-                                onDndOffClick = { id, set ->
-                                    onIntent(
-                                        DNDCalendarIntent.ToggleDNDOff(
-                                            id,
-                                            set
-                                        )
-                                    )
-                                },
-                                modifier = Modifier.animateItem()
-                            )
-                        }
-                    }
-                }
-            }
         }
     }
 }

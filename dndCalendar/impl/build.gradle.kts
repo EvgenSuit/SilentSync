@@ -51,8 +51,11 @@ dependencies {
 
     implementation(libs.androidx.core.ktx)
 
+    implementation(libs.gson)
+
     testImplementation(project(":utility"))
     testImplementation(libs.junit)
+    testImplementation(libs.kotlin.test.junit)
     testImplementation(libs.androidx.arch.testing)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.robolectric)
