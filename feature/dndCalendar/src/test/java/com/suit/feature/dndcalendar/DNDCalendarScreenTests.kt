@@ -2,8 +2,6 @@ package com.suit.feature.dndcalendar
 
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.assertIsEnabled
-import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -65,15 +63,18 @@ class DNDCalendarScreenTests {
         }
     }
     @Test
-    fun scheduleEvents_criteriaNotNull_scheduleEnabled() {
+    fun scheduleEvents_criteriaNotNull_criteriaDisplayed() {
         val uiState = mutableStateOf(DNDCalendarUIState())
         composeRule.setContentWithSnackbar(
             composable = { DNDCalendarContent(uiState.value) { } }
         ) {
-            onNodeWithText(getString(R.string.events_not_synced)).assertIsDisplayed()
-            uiState.value = DNDCalendarUIState(criteria = DNDScheduleCalendarCriteria(likeNames = listOf("event")))
-
-            onNodeWithText(getString(R.string.events_not_synced)).assertIsDisplayed()
+            val likeName = "event"
+            val likeAttendee = "evgen"
+            uiState.value = DNDCalendarUIState(criteria = DNDScheduleCalendarCriteria(likeNames = listOf(likeName),
+                attendees = listOf(likeAttendee)
+            ))
+            onNodeWithText(likeName).assertIsDisplayed()
+            onNodeWithText(likeAttendee).assertIsDisplayed()
         }
     }
 

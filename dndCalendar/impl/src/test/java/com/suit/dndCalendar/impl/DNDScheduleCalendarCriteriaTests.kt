@@ -4,15 +4,10 @@ import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.suit.dndCalendar.impl.data.DNDScheduleCalendarCriteriaManagerImpl
-import com.suit.dndCalendar.impl.data.UpcomingEventsManagerImpl
 import com.suit.dndCalendar.impl.data.criteriaDb.DNDScheduleCalendarCriteriaDb
 import com.suit.dndCalendar.impl.data.criteriaDb.DNDScheduleCalendarCriteriaEntity
-import com.suit.dndCalendar.impl.data.upcomingEventsDb.UpcomingEventsDb
 import com.suit.dndcalendar.api.DNDScheduleCalendarCriteria
-import com.suit.dndcalendar.api.UpcomingEventData
 import junit.framework.TestCase.assertEquals
-import junit.framework.TestCase.assertFalse
-import junit.framework.TestCase.assertTrue
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.Before
@@ -53,6 +48,7 @@ class DNDScheduleCalendarCriteriaTests {
 
     private fun DNDScheduleCalendarCriteriaEntity.toCriteria() =
         DNDScheduleCalendarCriteria(
-            likeNames = likeNames
+            likeNames = likeNames,
+            attendees = participants
         )
 }

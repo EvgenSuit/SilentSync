@@ -3,6 +3,7 @@ package com.suit.dndCalendar.impl.helpers
 import android.content.ContentProvider
 import android.content.ContentUris
 import android.content.ContentValues
+import android.content.UriMatcher
 import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteException
@@ -10,7 +11,15 @@ import android.database.sqlite.SQLiteQueryBuilder
 import android.net.Uri
 import android.provider.CalendarContract
 
-class SilentSyncCalendarProvider: ContentProvider() {
+private const val EVENTS = 1
+private const val ATTENDEES = 2
+
+private val uriMatcher = UriMatcher(UriMatcher.NO_MATCH).apply {
+    addURI(CalendarContract.AUTHORITY, "events", EVENTS)
+    addURI(CalendarContract.AUTHORITY, "attendees", ATTENDEES)
+}
+
+class EventCalendarProvider: ContentProvider() {
     private lateinit var calendarDBHelper: CalendarDBHelper
     private lateinit var database: SQLiteDatabase
 
@@ -33,7 +42,11 @@ class SilentSyncCalendarProvider: ContentProvider() {
         sortOrder: String?
     ): Cursor? {
         val queryBuilder = SQLiteQueryBuilder()
-        queryBuilder.tables = CalendarEntry.TABLE_NAME
+        when (uriMatcher.match(uri)) {
+            EVENTS -> queryBuilder.tables = CalendarEventEntry.TABLE_NAME
+            ATTENDEES -> queryBuilder.tables = CalendarAttendeeEntry.TABLE_NAME
+            else -> throw IllegalArgumentException("Unknown URI: $uri")
+        }
         val cursor = queryBuilder.query(database, projection, selection, selectionArgs, null, null, sortOrder)
         cursor.setNotificationUri(context?.contentResolver, uri) // not sure what this is for
         return cursor
@@ -44,10 +57,14 @@ class SilentSyncCalendarProvider: ContentProvider() {
     }
 
     override fun insert(uri: Uri, values: ContentValues?): Uri {
-        val rowId = database.insert(CalendarEntry.TABLE_NAME, "", values)
-        println(rowId)
+        val table = when (uriMatcher.match(uri)) {
+            EVENTS -> CalendarEventEntry.TABLE_NAME
+            ATTENDEES -> CalendarAttendeeEntry.TABLE_NAME
+            else -> throw IllegalArgumentException("Unknown URI: $uri")
+        }
+        val rowId = database.insert(table, "", values)
         if (rowId > 0) {
-            val uriWithAppendedId = ContentUris.withAppendedId(CalendarContract.Events.CONTENT_URI, rowId)
+            val uriWithAppendedId = ContentUris.withAppendedId(uri, rowId)
             context?.contentResolver?.notifyChange(uriWithAppendedId, null)
             return uriWithAppendedId
         }
@@ -71,6 +88,6 @@ class SilentSyncCalendarProvider: ContentProvider() {
         selection: String?,
         selectionArgs: Array<out String>?
     ): Int {
-        return database.update(CalendarEntry.TABLE_NAME, values, selection, selectionArgs)
+        return database.update(CalendarEventEntry.TABLE_NAME, values, selection, selectionArgs)
     }
 }

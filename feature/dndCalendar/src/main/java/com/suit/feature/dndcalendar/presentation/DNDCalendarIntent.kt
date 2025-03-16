@@ -1,7 +1,5 @@
 package com.suit.feature.dndcalendar.presentation
 
-import com.suit.feature.dndcalendar.presentation.ui.DNDCalendarCriteriaDeletion
-
 sealed class DNDCalendarIntent {
     data object GetCriteria: DNDCalendarIntent()
     data class InputCriteria(val dndCalendarCriteriaInput: DNDCalendarCriteriaInput): DNDCalendarIntent()

@@ -8,7 +8,6 @@ import com.suit.dndcalendar.api.DNDScheduleCalendarCriteriaManager
 import com.suit.dndcalendar.api.UpcomingEventData
 import com.suit.dndcalendar.api.UpcomingEventsManager
 import com.suit.feature.dndcalendar.R
-import com.suit.feature.dndcalendar.presentation.ui.DNDCalendarCriteriaDeletion
 import com.suit.utility.NoCalendarCriteriaFound
 import com.suit.utility.ui.CustomResult
 import com.suit.utility.ui.DNDCalendarUIEvent
@@ -93,7 +92,14 @@ class DNDCalendarViewModel(
         val updatedCriteria =
             when (criteriaInput) {
                 is DNDCalendarCriteriaInput.NameLike -> criteria?.copy(likeNames = criteria.likeNames + criteriaInput.nameLike.trim())
-                    ?: DNDScheduleCalendarCriteria(listOf(criteriaInput.nameLike))
+                    ?: DNDScheduleCalendarCriteria(
+                        likeNames = listOf(criteriaInput.nameLike),
+                        attendees = listOf())
+                is DNDCalendarCriteriaInput.Participant -> criteria?.copy(
+                    attendees = criteria.attendees + criteriaInput.participantName.trim()
+                ) ?: DNDScheduleCalendarCriteria(
+                    likeNames = listOf(),
+                    attendees = listOf(criteriaInput.participantName))
             }
         _uiState.update {
             it.copy(criteria = updatedCriteria)
@@ -104,9 +110,10 @@ class DNDCalendarViewModel(
         val criteria = uiState.value.criteria
 
         val updatedCriteria = when (criteriaDeletion) {
-            is DNDCalendarCriteriaDeletion.NameLike -> {
+            is DNDCalendarCriteriaDeletion.NameLike ->
                 criteria?.copy(likeNames = criteria.likeNames.filterNot { it == criteriaDeletion.nameLike })
-            }
+            is DNDCalendarCriteriaDeletion.Participant ->
+                criteria?.copy(attendees = criteria.attendees.filterNot { it == criteriaDeletion.participantName })
         }
         _uiState.update {
             it.copy(criteria = updatedCriteria)
@@ -120,6 +127,7 @@ class DNDCalendarViewModel(
                 dndCalendarScheduler.schedule()
                 _uiState.update { it.copy(eventsSyncResult = CustomResult.Success) }
             } catch (e: Exception) {
+                println(e)
                 _uiState.update { it.copy(eventsSyncResult = CustomResult.Error) }
                 if (e !is NoCalendarCriteriaFound) {
                     _uiEvents.emit(DNDCalendarUIEvent.ShowSnackbar(UIText.StringResource(com.suit.utility.R.string.could_not_sync_events)))
@@ -140,6 +148,7 @@ class DNDCalendarViewModel(
                 _uiEvents.emit(DNDCalendarUIEvent.Unfocus)
                 _uiEvents.emit(DNDCalendarUIEvent.ShowSnackbar(UIText.StringResource(R.string.successfully_synced_events)))
             } catch (e: Exception) {
+                println(e)
                 _uiEvents.emit(DNDCalendarUIEvent.ShowSnackbar(UIText.StringResource(com.suit.utility.R.string.could_not_sync_events)))
                 _uiState.update { it.copy(eventsSyncResult = CustomResult.Error) }
             }

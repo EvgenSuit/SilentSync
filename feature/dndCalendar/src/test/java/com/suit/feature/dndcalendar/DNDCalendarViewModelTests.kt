@@ -8,7 +8,7 @@ import com.suit.dndcalendar.api.UpcomingEventData
 import com.suit.dndcalendar.api.UpcomingEventsManager
 import com.suit.feature.dndcalendar.presentation.DNDCalendarIntent
 import com.suit.feature.dndcalendar.presentation.DNDCalendarViewModel
-import com.suit.feature.dndcalendar.presentation.ui.DNDCalendarCriteriaDeletion
+import com.suit.feature.dndcalendar.presentation.DNDCalendarCriteriaDeletion
 import com.suit.utility.NoCalendarCriteriaFound
 import com.suit.utility.test.MainDispatcherRule
 import com.suit.utility.ui.CustomResult
@@ -18,6 +18,7 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import junit.framework.TestCase.assertEquals
+import junit.framework.TestCase.assertFalse
 import junit.framework.TestCase.assertTrue
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
@@ -36,7 +37,8 @@ class DNDCalendarViewModelTests {
     @get: Rule
     val mainDispatcherRule = MainDispatcherRule()
 
-    private val criteria = DNDScheduleCalendarCriteria(likeNames = listOf("event"))
+    private val criteria = DNDScheduleCalendarCriteria(likeNames = listOf("event"),
+        attendees = listOf("evgen"))
     private val upcomingEventData = UpcomingEventData(1L, "Some event", 0, 0)
 
     private fun setup(
@@ -153,7 +155,7 @@ class DNDCalendarViewModelTests {
     }
 
     @Test
-    fun deleteCriteria_criteriaDeleted() = runTest {
+    fun deleteNameLikeCriteria_criteriaDeleted() = runTest {
         setup(isCriteriaPresent = true)
 
         viewModel.uiState.test {
@@ -164,7 +166,28 @@ class DNDCalendarViewModelTests {
                     handleIntent(DNDCalendarIntent.DeleteCriteria(DNDCalendarCriteriaDeletion.NameLike(it)))
                 }
             }
-            assertTrue(awaitItem().criteria?.isEmpty() == true)
+            val updatedCriteria = awaitItem().criteria!!
+            assertEquals(criteria.attendees, updatedCriteria.attendees)
+            assertTrue(updatedCriteria.likeNames.isEmpty())
+            assertFalse(updatedCriteria.isEmpty())
+        }
+    }
+    @Test
+    fun deleteAttendeeCriteria_criteriaDeleted() = runTest {
+        setup(isCriteriaPresent = true)
+
+        viewModel.uiState.test {
+            skipItems(1)
+            assertEquals(awaitItem().criteria, criteria)
+            viewModel.apply {
+                criteria.attendees.forEach {
+                    handleIntent(DNDCalendarIntent.DeleteCriteria(DNDCalendarCriteriaDeletion.Participant(it)))
+                }
+            }
+            val updatedCriteria = awaitItem().criteria!!
+            assertEquals(criteria.likeNames, updatedCriteria.likeNames)
+            assertTrue(updatedCriteria.attendees.isEmpty())
+            assertFalse(updatedCriteria.isEmpty())
         }
     }
 
