@@ -24,7 +24,6 @@ import org.robolectric.RobolectricTestRunner
 class DNDScheduleCalendarCriteriaTests {
     private lateinit var context: Context
     private lateinit var criteriaDb: DNDScheduleCalendarCriteriaDb
-    private lateinit var upcomingEventsDb: UpcomingEventsDb
 
     private lateinit var dndScheduleCalendarCriteriaManager: DNDScheduleCalendarCriteriaManagerImpl
 
@@ -35,36 +34,25 @@ class DNDScheduleCalendarCriteriaTests {
             context,
             DNDScheduleCalendarCriteriaDb::class.java
         ).allowMainThreadQueries().build()
-        upcomingEventsDb = Room.inMemoryDatabaseBuilder(
-            context,
-            UpcomingEventsDb::class.java
-        ).allowMainThreadQueries().build()
-        val upcomingEventsManager = UpcomingEventsManagerImpl(
-            context = context, db = upcomingEventsDb
-        )
         dndScheduleCalendarCriteriaManager = DNDScheduleCalendarCriteriaManagerImpl(
-            dndScheduleCalendarCriteriaDb = criteriaDb,
-            upcomingEventsManager = upcomingEventsManager
+            dndScheduleCalendarCriteriaDb = criteriaDb
         )
     }
 
     @Test
-    fun changeCriteria_criteriaReplacedAndUpcomingTogglesDeleted() = runTest {
-        val criteriaEntity1 = DNDScheduleCalendarCriteriaEntity(likeName = "some event")
-        upcomingEventsDb.dao().insert(UpcomingEventData(1L, title = criteriaEntity1.likeName, startTime = 0, endTime = 0))
-        assertFalse(upcomingEventsDb.dao().getUpcomingEvents().first().isEmpty())
+    fun changeCriteria_criteriaReplaced() = runTest {
+        val criteriaEntity1 = DNDScheduleCalendarCriteriaEntity(likeNames = listOf("some event"))
         criteriaDb.dao().insertCriteria(criteriaEntity1)
         assertEquals(criteriaEntity1, criteriaDb.dao().criteriaFlow().first())
 
-        val criteriaEntity2 = DNDScheduleCalendarCriteriaEntity(likeName = "some event 2")
+        val criteriaEntity2 = DNDScheduleCalendarCriteriaEntity(likeNames = listOf("some event 2"))
         dndScheduleCalendarCriteriaManager.changeCriteria(criteriaEntity2.toCriteria())
 
-        assertTrue(upcomingEventsDb.dao().getUpcomingEvents().first().isEmpty())
         assertEquals(criteriaEntity2, criteriaDb.dao().criteriaFlow().first())
     }
 
     private fun DNDScheduleCalendarCriteriaEntity.toCriteria() =
         DNDScheduleCalendarCriteria(
-            likeName = likeName
+            likeNames = likeNames
         )
 }

@@ -60,9 +60,7 @@ class DNDCalendarScreenTests {
             composable = { DNDCalendarContent(uiState.value) { } }
         ) {
             onNodeWithText(getString(R.string.events_not_synced)).assertIsDisplayed()
-            onNodeWithText(getString(R.string.sync_events)).assertIsNotEnabled()
             uiState.value = DNDCalendarUIState()
-            onNodeWithText(getString(R.string.sync_events)).assertIsNotEnabled()
             onNodeWithText(getString(R.string.events_not_synced)).assertIsDisplayed()
         }
     }
@@ -73,10 +71,8 @@ class DNDCalendarScreenTests {
             composable = { DNDCalendarContent(uiState.value) { } }
         ) {
             onNodeWithText(getString(R.string.events_not_synced)).assertIsDisplayed()
-            onNodeWithText(getString(R.string.sync_events)).assertIsNotEnabled()
-            uiState.value = DNDCalendarUIState(criteria = DNDScheduleCalendarCriteria(likeName = "event"))
+            uiState.value = DNDCalendarUIState(criteria = DNDScheduleCalendarCriteria(likeNames = listOf("event")))
 
-            onNodeWithText(getString(R.string.sync_events)).assertIsEnabled()
             onNodeWithText(getString(R.string.events_not_synced)).assertIsDisplayed()
         }
     }

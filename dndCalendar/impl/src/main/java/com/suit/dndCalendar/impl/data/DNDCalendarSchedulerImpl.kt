@@ -22,9 +22,19 @@ internal class DNDCalendarSchedulerImpl(
 ): DNDCalendarScheduler {
 
     override suspend fun schedule() {
-        val criteria = dndScheduleCalendarCriteriaManager.getCriteria().firstOrNull() ?:
-            throw NoCalendarCriteriaFound("No criteria for calendar-based dnd toggle was given")
+        val upcomingEvents = upcomingEventsManager.upcomingEventsFlow().firstOrNull()
+        val criteria = dndScheduleCalendarCriteriaManager.getCriteria().firstOrNull()
 
+        if (criteria == null || criteria.isEmpty()) {
+            if (!upcomingEvents.isNullOrEmpty()) {
+                upcomingEvents.forEach { upcomingEventsManager.removeUpcomingEvent(it.id) }
+                return
+            }
+            throw NoCalendarCriteriaFound("No criteria for calendar-based dnd toggle was given")
+        }
+
+        val likeNames = criteria.likeNames
+        if (likeNames.isEmpty()) throw NoCalendarCriteriaFound("No like names provided")
         val projection = arrayOf(
             CalendarContract.Events._ID,
             CalendarContract.Events.TITLE,
@@ -32,19 +42,20 @@ internal class DNDCalendarSchedulerImpl(
             CalendarContract.Events.DTEND,
             CalendarContract.Events.DELETED
         )
-        println("Executing EventScheduler")
+        val selections = likeNames.joinToString(" OR ") { "${CalendarContract.Events.TITLE} LIKE ?" }
+        val selectionArgs = likeNames.map { "%$it%" }.toTypedArray()
         val cursor: Cursor? = context.contentResolver.query(
             CalendarContract.Events.CONTENT_URI,
             projection,
-            "${CalendarContract.Events.TITLE} LIKE ?",
-            arrayOf("%${criteria.likeName}%"),
-            null
+            selections,
+            selectionArgs,
+            "${CalendarContract.Events.DTSTART} DESC"
         )
         Log.d(
             "EventScheduler",
             "Executing EventScheduler"
         )
-        val upcomingEvents = upcomingEventsManager.upcomingEventsFlow().firstOrNull()
+        val currUpcomingEventIds = mutableListOf<Long>()
         cursor?.use {
             if (it.count != 0) {
                 while (it.moveToNext()) {
@@ -58,6 +69,7 @@ internal class DNDCalendarSchedulerImpl(
                     val deleted =
                         it.getInt(it.getColumnIndexOrThrow(CalendarContract.Events.DELETED))
                     val event = CalendarEventData(eventId, title, startTime, endTime, deleted == 1)
+                    currUpcomingEventIds.add(event.id)
                     scheduleAlarms(event,
                         onGetSavedUpcomingEventData = { upcomingEvents?.firstOrNull { it.id == eventId }} )
 
@@ -69,6 +81,22 @@ internal class DNDCalendarSchedulerImpl(
                 }
             } else {
                 Log.d("EventScheduler", "No calendar events found.")
+            }
+        }
+        removeEventsNotMatchingCriteria(
+            savedUpcomingEventIds = upcomingEvents?.map { it.id }?.toSet(),
+            currUpcomingEventIds = currUpcomingEventIds.toSet())
+    }
+
+    private suspend fun removeEventsNotMatchingCriteria(
+        savedUpcomingEventIds: Set<Long>?,
+        currUpcomingEventIds: Set<Long>
+    ) {
+        // remove upcoming events that no longer match given criteria during syncing
+        if (savedUpcomingEventIds != null) {
+            val diff = savedUpcomingEventIds - currUpcomingEventIds
+            diff.forEach {
+                upcomingEventsManager.removeUpcomingEvent(it)
             }
         }
     }
@@ -93,7 +121,6 @@ internal class DNDCalendarSchedulerImpl(
                         startTime = event.startTime,
                         endTime = event.endTime
                     ) ?: event.toUpcomingEvent()
-                    println(upcomingEvent)
                     insert(upcomingEvent)
                     if (upcomingEvent.scheduleDndOn) setDndOnToggle(event.id, event.startTime)
                     if (upcomingEvent.scheduleDndOff) setDndOffToggle(event.id, event.endTime)
