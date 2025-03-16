@@ -12,7 +12,7 @@ internal interface UpcomingEventsDAO {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(event: UpcomingEventData)
 
-    @Query("SELECT * FROM UpcomingEventData")
+    @Query("SELECT * FROM UpcomingEventData ORDER BY startTime ASC")
     fun getUpcomingEvents(): Flow<List<UpcomingEventData>>
 
     @Query("UPDATE UpcomingEventData SET scheduleDndOn = :set WHERE id = :id")

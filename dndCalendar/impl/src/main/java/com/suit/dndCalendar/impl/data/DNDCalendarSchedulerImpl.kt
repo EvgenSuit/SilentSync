@@ -10,7 +10,10 @@ import com.suit.dndcalendar.api.DNDScheduleCalendarCriteriaManager
 import com.suit.dndcalendar.api.UpcomingEventData
 import com.suit.dndcalendar.api.UpcomingEventsManager
 import com.suit.utility.NoCalendarCriteriaFound
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.toCollection
 import java.text.SimpleDateFormat
 import java.time.Clock
 
@@ -22,9 +25,51 @@ internal class DNDCalendarSchedulerImpl(
 ): DNDCalendarScheduler {
 
     override suspend fun schedule() {
-        val criteria = dndScheduleCalendarCriteriaManager.getCriteria().firstOrNull() ?:
-            throw NoCalendarCriteriaFound("No criteria for calendar-based dnd toggle was given")
+        val upcomingEvents = upcomingEventsManager.upcomingEventsFlow().firstOrNull()
+        val criteria = dndScheduleCalendarCriteriaManager.getCriteria().firstOrNull()
 
+        if (criteria == null || criteria.isEmpty()) {
+            if (!upcomingEvents.isNullOrEmpty()) {
+                upcomingEvents.forEach { upcomingEventsManager.removeUpcomingEvent(it.id) }
+                return
+            }
+            throw NoCalendarCriteriaFound("No criteria for calendar-based dnd toggle was given")
+        }
+
+        val likeNames = criteria.likeNames
+        val attendees = criteria.attendees
+        val likeNameEvents = getLikeNameEvents(likeNames).toCollection(mutableListOf())
+        val likeAttendeesEvents = getAttendeeData(attendees).toCollection(mutableListOf())
+
+        val currUpcomingEventIds = mutableListOf<Long>()
+        (likeNameEvents.map { it.eventId } + likeAttendeesEvents.map { it.eventId })
+            .toSet().forEach { eventId ->
+                val basicEventData = getBasicEventData(eventId)
+                // for some reason, when an event with matching attendee criteria changes, a second attendee event gets
+                // detected by getAttendeeData, with id being incremented from time to time, like [AttendeeData(eventId=496, attendeeName=Name), AttendeeData(eventId=501, attendeeName=Name)]
+                // so below check makes sure that event exists
+                if (basicEventData != null) {
+                    val attendees = likeAttendeesEvents.filter { it.eventId == eventId }
+                    val calendarEvent = CalendarEventData(
+                        id = eventId,
+                        title = basicEventData.title,
+                        startTime = basicEventData.startTime,
+                        endTime = basicEventData.endTime,
+                        attendees = attendees.map { it.attendeeName },
+                        deleted = basicEventData.deleted)
+                    currUpcomingEventIds.add(eventId)
+                    scheduleAlarms(calendarEvent,
+                        onGetSavedUpcomingEventData = { upcomingEvents?.firstOrNull { it.id == eventId }} )
+                }
+            }
+        removeEventsNotMatchingCriteria(
+            savedUpcomingEventIds = upcomingEvents?.map { it.id }?.toSet(),
+            currUpcomingEventIds = currUpcomingEventIds.toSet())
+    }
+
+    private suspend fun getBasicEventData(
+        eventId: Long
+    ): BasicEventData? {
         val projection = arrayOf(
             CalendarContract.Events._ID,
             CalendarContract.Events.TITLE,
@@ -32,43 +77,120 @@ internal class DNDCalendarSchedulerImpl(
             CalendarContract.Events.DTEND,
             CalendarContract.Events.DELETED
         )
-        println("Executing EventScheduler")
         val cursor: Cursor? = context.contentResolver.query(
             CalendarContract.Events.CONTENT_URI,
             projection,
-            "${CalendarContract.Events.TITLE} LIKE ?",
-            arrayOf("%${criteria.likeName}%"),
+            "${CalendarContract.Events._ID} = ?",
+            arrayOf(eventId.toString()),
             null
         )
-        Log.d(
-            "EventScheduler",
-            "Executing EventScheduler"
-        )
-        val upcomingEvents = upcomingEventsManager.upcomingEventsFlow().firstOrNull()
-        cursor?.use {
-            if (it.count != 0) {
-                while (it.moveToNext()) {
-                    val eventId = it.getLong(it.getColumnIndexOrThrow(CalendarContract.Events._ID))
-                    val title =
-                        it.getString(it.getColumnIndexOrThrow(CalendarContract.Events.TITLE))
-                    val startTime =
-                        it.getLong(it.getColumnIndexOrThrow(CalendarContract.Events.DTSTART))
-                    val endTime =
-                        it.getLong(it.getColumnIndexOrThrow(CalendarContract.Events.DTEND))
-                    val deleted =
-                        it.getInt(it.getColumnIndexOrThrow(CalendarContract.Events.DELETED))
-                    val event = CalendarEventData(eventId, title, startTime, endTime, deleted == 1)
-                    scheduleAlarms(event,
-                        onGetSavedUpcomingEventData = { upcomingEvents?.firstOrNull { it.id == eventId }} )
+        var basicEventData: BasicEventData? = null
+        cursor.useCursor {
+            val id = it.getLong(it.getColumnIndexOrThrow(CalendarContract.Events._ID))
+            val title = it.getString(it.getColumnIndexOrThrow(CalendarContract.Events.TITLE))
+            val startTime =
+                it.getLong(it.getColumnIndexOrThrow(CalendarContract.Events.DTSTART))
+            val endTime =
+                it.getLong(it.getColumnIndexOrThrow(CalendarContract.Events.DTEND))
+            val deleted =
+                it.getInt(it.getColumnIndexOrThrow(CalendarContract.Events.DELETED))
+            basicEventData = BasicEventData(
+                id = id,
+                title = title,
+                startTime = startTime,
+                endTime = endTime,
+                deleted = deleted == 1
+            )
+        }
+        return basicEventData
+    }
 
-                    println("Event ID: $eventId, Title: $title, Start: $startTime, End: $endTime, Is deleted: $deleted")
-                    Log.d(
-                        "EventScheduler",
-                        "Event ID: $eventId, Title: $title, Start: $startTime, End: $endTime, Is deleted: $deleted"
-                    )
-                }
-            } else {
-                Log.d("EventScheduler", "No calendar events found.")
+    private data class BasicEventData(
+        val id: Long,
+        val title: String,
+        val startTime: Long,
+        val endTime: Long,
+        val deleted: Boolean = false
+    )
+
+    private fun getLikeNameEvents(
+        likeNames: List<String>
+    ) = flow {
+        if (likeNames.isEmpty()) return@flow
+        val projection = arrayOf(
+            CalendarContract.Events._ID,
+            CalendarContract.Events.TITLE
+        )
+        val cursor = context.contentResolver.query(
+            CalendarContract.Events.CONTENT_URI,
+            projection,
+            likeNames.joinToString(" OR ") { "${CalendarContract.Events.TITLE} LIKE ?" },
+            likeNames.map { "%$it%" }.toTypedArray(),
+            null
+        )
+        cursor.useCursor {
+            val eventId = it.getLong(it.getColumnIndexOrThrow(CalendarContract.Events._ID))
+            val title = it.getString(it.getColumnIndexOrThrow(CalendarContract.Events.TITLE))
+            emit(
+                LikeNameEventData(
+                    eventId = eventId,
+                    name = title
+                )
+            )
+        }
+    }
+    private data class LikeNameEventData(
+        val eventId: Long,
+        val name: String
+    )
+
+    private fun getAttendeeData(
+        attendees: List<String>
+    ): Flow<AttendeeData> = flow {
+        if (attendees.isEmpty()) return@flow
+        val projection = arrayOf(
+            CalendarContract.Attendees.EVENT_ID,
+            CalendarContract.Attendees.ATTENDEE_NAME
+        )
+        val cursor = context.contentResolver.query(
+            CalendarContract.Attendees.CONTENT_URI,
+            projection,
+            attendees.joinToString(" OR ") { "${CalendarContract.Attendees.ATTENDEE_NAME} LIKE ?" },
+            attendees.map { "%$it%" }.toTypedArray(),
+            null
+        )
+        cursor.useCursor {
+            val eventId = it.getLong(it.getColumnIndexOrThrow(CalendarContract.Attendees.EVENT_ID))
+            val name = it.getString(it.getColumnIndexOrThrow(CalendarContract.Attendees.ATTENDEE_NAME))
+            emit(
+                AttendeeData(
+                    eventId = eventId,
+                    attendeeName = name
+                )
+            )
+        }
+    }
+    private data class AttendeeData(
+        val eventId: Long,
+        val attendeeName: String
+    )
+
+    private suspend fun Cursor?.useCursor(block: suspend (Cursor) -> Unit) =
+        this?.use {
+            if (it.count != 0) {
+                while (it.moveToNext()) block(it)
+            }
+        }
+
+    private suspend fun removeEventsNotMatchingCriteria(
+        savedUpcomingEventIds: Set<Long>?,
+        currUpcomingEventIds: Set<Long>
+    ) {
+        // remove upcoming events that no longer match given criteria during syncing
+        if (savedUpcomingEventIds != null) {
+            val diff = savedUpcomingEventIds - currUpcomingEventIds
+            diff.forEach {
+                upcomingEventsManager.removeUpcomingEvent(it)
             }
         }
     }
@@ -93,7 +215,6 @@ internal class DNDCalendarSchedulerImpl(
                         startTime = event.startTime,
                         endTime = event.endTime
                     ) ?: event.toUpcomingEvent()
-                    println(upcomingEvent)
                     insert(upcomingEvent)
                     if (upcomingEvent.scheduleDndOn) setDndOnToggle(event.id, event.startTime)
                     if (upcomingEvent.scheduleDndOff) setDndOffToggle(event.id, event.endTime)

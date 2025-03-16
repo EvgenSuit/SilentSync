@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.ksp.plugin)
+    alias(libs.plugins.androidx.room)
 }
 
 android {
@@ -13,6 +14,9 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles("consumer-rules.pro")
+    }
+    room {
+        schemaDirectory("$projectDir/schemas")
     }
     buildTypes {
         release {
@@ -51,8 +55,11 @@ dependencies {
 
     implementation(libs.androidx.core.ktx)
 
+    implementation(libs.gson)
+
     testImplementation(project(":utility"))
     testImplementation(libs.junit)
+    testImplementation(libs.kotlin.test.junit)
     testImplementation(libs.androidx.arch.testing)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.robolectric)

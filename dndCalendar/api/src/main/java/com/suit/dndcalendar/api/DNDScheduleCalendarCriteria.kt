@@ -1,5 +1,9 @@
 package com.suit.dndcalendar.api
 
 data class DNDScheduleCalendarCriteria(
-    val likeName: String
-)
+    val likeNames: List<String>,
+    val attendees: List<String>
+) {
+    fun isEmpty() = likeNames.isEmpty()
+            && attendees.isEmpty()
+}
