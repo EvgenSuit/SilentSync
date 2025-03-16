@@ -33,7 +33,6 @@ val dndCalendarImplKoinModule = module {
                 UpcomingEventsDb::class.java,
                 "upcoming-events-db"
             )
-                .fallbackToDestructiveMigration()
                 .build()
         )
     }
@@ -43,7 +42,7 @@ val dndCalendarImplKoinModule = module {
                 androidContext(),
                 DNDScheduleCalendarCriteriaDb::class.java,
                 "dnd-schedule-calendar-db"
-            ).fallbackToDestructiveMigration()
+            )
                 .build()
         )
     }
