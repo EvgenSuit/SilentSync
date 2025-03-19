@@ -1,5 +1,5 @@
 # SilentSync
-SilentSync is an Android app that makes it easy to avoid being distracted during important meetings by toggling DND (Do-Not-Disturb) mode based on calendar events and provided criteria. It works in the background even when the phone is in Doze mode.
+SilentSync is an Android app that makes it easy to avoid being distracted by notifications and calls (except those in priority list) during important meetings by toggling DND (Do-Not-Disturb) mode based on calendar events and provided criteria. It works in the background even when the phone is in Doze mode.
 
 
 ## Tech Stack
