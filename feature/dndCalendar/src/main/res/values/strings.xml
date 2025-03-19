@@ -17,6 +17,6 @@
 
     <string name="upcoming_events">Upcoming events</string>
     <string name="nothing_here_yet">Nothing here yet</string>
-    <string name="turn_dnd_on">Turn DND on</string>
-    <string name="turn_dnd_off">Turn DND off</string>
+    <string name="turn_dnd_on">Turn DND on when event starts</string>
+    <string name="turn_dnd_off">Turn DND off when event ends</string>
 </resources>
