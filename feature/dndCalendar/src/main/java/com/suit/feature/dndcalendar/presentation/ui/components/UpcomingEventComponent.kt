@@ -3,9 +3,13 @@ package com.suit.feature.dndcalendar.presentation.ui.components
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.MaterialTheme
@@ -35,6 +39,7 @@ fun UpcomingEventComponent(
             .testTag("UpcomingEventId: ${event.id}")
     ) {
         Column(
+            verticalArrangement = Arrangement.spacedBy(5.dp),
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(5.dp)
@@ -44,18 +49,20 @@ fun UpcomingEventComponent(
 
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
+                horizontalArrangement = Arrangement.spacedBy(20.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 UpcomingEventCheckbox(
                     stringId = R.string.turn_dnd_on,
                     checked = event.scheduleDndOn,
-                    onClick = { onDndOnClick(event.id, it) }
+                    onClick = { onDndOnClick(event.id, it) },
+                    modifier = Modifier.weight(1f)
                 )
                 UpcomingEventCheckbox(
                     stringId = R.string.turn_dnd_off,
                     checked = event.scheduleDndOff,
                     onClick = { onDndOffClick(event.id, it) },
+                    modifier = Modifier.weight(1f)
                 )
             }
         }
@@ -66,15 +73,21 @@ fun UpcomingEventComponent(
 private fun UpcomingEventCheckbox(
     @StringRes stringId: Int,
     checked: Boolean,
-    onClick: (Boolean) -> Unit
+    onClick: (Boolean) -> Unit,
+    modifier: Modifier
 ) {
     Row(
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = modifier
     ) {
-        Text(stringResource(stringId))
+        Text(
+            stringResource(stringId),
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.labelSmall
+        )
         Checkbox(
             checked = checked,
-            onCheckedChange = onClick
+            onCheckedChange = onClick,
         )
     }
 }
