@@ -235,7 +235,7 @@ internal class DNDCalendarSchedulerImpl(
     }
 
     // checks if current event's end time is equal to another event's start time
-    // returns true if no overlapping happens
+    // returns false if no overlapping happens
     private fun doesOverlap(endTime: Long): Boolean {
         val projection = arrayOf(
             CalendarContract.Events.DTSTART
