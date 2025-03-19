@@ -58,7 +58,13 @@ internal class DNDCalendarSchedulerImpl(
                         attendees = attendees.map { it.attendeeName },
                         deleted = basicEventData.deleted)
                     currUpcomingEventIds.add(eventId)
-                    scheduleAlarms(calendarEvent,
+
+                    // checks if current event's end time is equal to another event's start time
+                    // if true, don't schedule dnd off for current event
+                    val doesOverlap = doesOverlap(endTime = basicEventData.endTime)
+                    scheduleAlarms(
+                        event = calendarEvent,
+                        endTimeOverlaps = doesOverlap,
                         onGetSavedUpcomingEventData = { upcomingEvents?.firstOrNull { it.id == eventId }} )
                 }
             }
@@ -175,28 +181,9 @@ internal class DNDCalendarSchedulerImpl(
         val attendeeName: String
     )
 
-    private suspend fun Cursor?.useCursor(block: suspend (Cursor) -> Unit) =
-        this?.use {
-            if (it.count != 0) {
-                while (it.moveToNext()) block(it)
-            }
-        }
-
-    private suspend fun removeEventsNotMatchingCriteria(
-        savedUpcomingEventIds: Set<Long>?,
-        currUpcomingEventIds: Set<Long>
-    ) {
-        // remove upcoming events that no longer match given criteria during syncing
-        if (savedUpcomingEventIds != null) {
-            val diff = savedUpcomingEventIds - currUpcomingEventIds
-            diff.forEach {
-                upcomingEventsManager.removeUpcomingEvent(it)
-            }
-        }
-    }
-
     @SuppressLint("ScheduleExactAlarm")
     private suspend fun scheduleAlarms(event: CalendarEventData,
+                                       endTimeOverlaps: Boolean,
                                        onGetSavedUpcomingEventData: () -> UpcomingEventData?) {
         when (event.deleted || event.endTime < clock.millis()) {
             true -> {
@@ -217,19 +204,60 @@ internal class DNDCalendarSchedulerImpl(
                     ) ?: event.toUpcomingEvent()
                     insert(upcomingEvent)
                     if (upcomingEvent.scheduleDndOn) setDndOnToggle(event.id, event.startTime)
-                    if (upcomingEvent.scheduleDndOff) setDndOffToggle(event.id, event.endTime)
+                    if (upcomingEvent.scheduleDndOff) {
+                        if (!endTimeOverlaps) setDndOffToggle(event.id, event.endTime)
+                        else removeDndOffToggle(event.id)
+                    }
                 }
 
-                println("Scheduled DND ON at ${SimpleDateFormat("yyyy-MM-dd, HH:mm:ss").format(event.startTime)} " +
-                        "and DND OFF at ${SimpleDateFormat("yyyy-MM-dd, HH:mm:ss").format(event.endTime)}.")
+                println("Scheduled DND ON for ${SimpleDateFormat("yyyy-MM-dd, HH:mm:ss").format(event.startTime)} " +
+                        "and DND OFF for ${SimpleDateFormat("yyyy-MM-dd, HH:mm:ss").format(event.endTime)}.")
                 Log.d(
                     "EventScheduler",
-                    "Scheduled DND ON at ${SimpleDateFormat("yyyy-MM-dd, HH:mm:ss").format(event.startTime)} " +
-                            "and DND OFF at ${SimpleDateFormat("yyyy-MM-dd, HH:mm:ss").format(event.endTime)}."
+                    "Scheduled DND ON for ${SimpleDateFormat("yyyy-MM-dd, HH:mm:ss").format(event.startTime)} " +
+                            "and DND OFF for ${SimpleDateFormat("yyyy-MM-dd, HH:mm:ss").format(event.endTime)}."
                 )
             }
         }
     }
+
+    private suspend fun removeEventsNotMatchingCriteria(
+        savedUpcomingEventIds: Set<Long>?,
+        currUpcomingEventIds: Set<Long>
+    ) {
+        // remove upcoming events that no longer match given criteria during syncing
+        if (savedUpcomingEventIds != null) {
+            val diff = savedUpcomingEventIds - currUpcomingEventIds
+            diff.forEach {
+                upcomingEventsManager.removeUpcomingEvent(it)
+            }
+        }
+    }
+
+    // checks if current event's end time is equal to another event's start time
+    // returns true if no overlapping happens
+    private fun doesOverlap(endTime: Long): Boolean {
+        val projection = arrayOf(
+            CalendarContract.Events.DTSTART
+        )
+        val cursor = context.contentResolver.query(
+            CalendarContract.Events.CONTENT_URI,
+            projection,
+            "${CalendarContract.Events.DTSTART} = ?",
+            arrayOf(endTime.toString()),
+            null
+        )
+        return cursor?.use {
+            it.count != 0
+        } ?: false
+    }
+
+    private suspend fun Cursor?.useCursor(block: suspend (Cursor) -> Unit) =
+        this?.use {
+            if (it.count != 0) {
+                while (it.moveToNext()) block(it)
+            }
+        }
 }
 
 enum class DNDActionType {
