@@ -173,6 +173,25 @@ class CalendarChangeReceiverTests {
         assertEquals(event2.startTime, scheduledTimes[1])
         assertEquals(event2.endTime, scheduledTimes[2])
     }
+    @Test
+    fun eventOccurs_endTimeEqualsToAnotherNotMatchingEventsStartTime_dndOffScheduledForFirstEvent() = runTest {
+        insertEntity(DNDScheduleCalendarCriteriaEntity(likeNames = listOf("event")))
+
+        val event1 = CalendarEventData(1L, "custom event", testClock.millis(), testClock.millis() + 10)
+        val event2 = CalendarEventData(2L, "some another", testClock.millis() + 10, testClock.millis() + 20)
+        TestHelpers.apply {
+            insertCalendarData(context, event1)
+            insertCalendarData(context, event2)
+        }
+
+        triggerEvent()
+
+        val shadowAlarmManager = shadowOf(context.getSystemService(AlarmManager::class.java))
+        val scheduledTimes = shadowAlarmManager.scheduledAlarms.map { it.triggerAtMs }
+        assertEquals(2, scheduledTimes.size)
+        assertEquals(event1.startTime, scheduledTimes[0])
+        assertEquals(event1.endTime, scheduledTimes[1])
+    }
 
     @Test
     fun eventOccurs_eventsNotMatchingCriteriaPresent_eventsRemoved() = runTest {

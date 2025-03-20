@@ -42,8 +42,9 @@ internal class DNDCalendarSchedulerImpl(
         val likeAttendeesEvents = getAttendeeData(attendees).toCollection(mutableListOf())
 
         val currUpcomingEventIds = mutableListOf<Long>()
-        (likeNameEvents.map { it.eventId } + likeAttendeesEvents.map { it.eventId })
-            .toSet().forEach { eventId ->
+        val matchingEventIds = (likeNameEvents.map { it.eventId } + likeAttendeesEvents.map { it.eventId })
+            .toSet()
+        matchingEventIds.forEach { eventId ->
                 val basicEventData = getBasicEventData(eventId)
                 // for some reason, when an event with matching attendee criteria changes, a second attendee event gets
                 // detected by getAttendeeData, with id being incremented from time to time, like [AttendeeData(eventId=496, attendeeName=Name), AttendeeData(eventId=501, attendeeName=Name)]
@@ -59,9 +60,10 @@ internal class DNDCalendarSchedulerImpl(
                         deleted = basicEventData.deleted)
                     currUpcomingEventIds.add(eventId)
 
-                    // checks if current event's end time is equal to another event's start time
+                    // checks if current event's end time is equal to another matching event's start time
                     // if true, don't schedule dnd off for current event
-                    val doesOverlap = doesOverlap(endTime = basicEventData.endTime)
+                    val doesOverlap = doesOverlap(endTime = basicEventData.endTime,
+                        doesMatch = { matchingEventIds.contains(it) })
                     scheduleAlarms(
                         event = calendarEvent,
                         endTimeOverlaps = doesOverlap,
@@ -236,8 +238,10 @@ internal class DNDCalendarSchedulerImpl(
 
     // checks if current event's end time is equal to another event's start time
     // returns false if no overlapping happens
-    private fun doesOverlap(endTime: Long): Boolean {
+    private fun doesOverlap(endTime: Long,
+                            doesMatch: (Long) -> Boolean): Boolean {
         val projection = arrayOf(
+            CalendarContract.Events._ID,
             CalendarContract.Events.DTSTART
         )
         val cursor = context.contentResolver.query(
@@ -248,8 +252,11 @@ internal class DNDCalendarSchedulerImpl(
             null
         )
         return cursor?.use {
-            it.count != 0
-        } ?: false
+            if (it.count == 0) false
+            else while(it.moveToNext()) {
+                return@use doesMatch(it.getLong(it.getColumnIndexOrThrow(CalendarContract.Events._ID)))
+            }
+        } == true
     }
 
     private suspend fun Cursor?.useCursor(block: suspend (Cursor) -> Unit) =

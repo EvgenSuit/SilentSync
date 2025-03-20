@@ -127,7 +127,6 @@ class DNDCalendarViewModel(
                 dndCalendarScheduler.schedule()
                 _uiState.update { it.copy(eventsSyncResult = CustomResult.Success) }
             } catch (e: Exception) {
-                println(e)
                 _uiState.update { it.copy(eventsSyncResult = CustomResult.Error) }
                 if (e !is NoCalendarCriteriaFound) {
                     _uiEvents.emit(DNDCalendarUIEvent.ShowSnackbar(UIText.StringResource(com.suit.utility.R.string.could_not_sync_events)))
@@ -148,7 +147,6 @@ class DNDCalendarViewModel(
                 _uiEvents.emit(DNDCalendarUIEvent.Unfocus)
                 _uiEvents.emit(DNDCalendarUIEvent.ShowSnackbar(UIText.StringResource(R.string.successfully_synced_events)))
             } catch (e: Exception) {
-                println(e)
                 _uiEvents.emit(DNDCalendarUIEvent.ShowSnackbar(UIText.StringResource(com.suit.utility.R.string.could_not_sync_events)))
                 _uiState.update { it.copy(eventsSyncResult = CustomResult.Error) }
             }
