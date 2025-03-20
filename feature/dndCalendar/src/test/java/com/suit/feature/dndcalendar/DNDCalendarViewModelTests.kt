@@ -62,7 +62,6 @@ class DNDCalendarViewModelTests {
                 if (toggleDNDModeException != null) throw toggleDNDModeException
             }
             coEvery { setDndOnToggle(id = any(), startTime = any()) } answers {
-                println("setting dnd on toggle")
                 if (toggleDNDModeException != null) throw toggleDNDModeException
             }
             every { upcomingEventsFlow() } returns flowOf(if (isUpcomingEventPresent) listOf(upcomingEventData) else listOf())
