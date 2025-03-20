@@ -163,7 +163,7 @@ fun DNDCalendarContentPreview() {
         Surface {
             DNDCalendarContent(
                 uiState = DNDCalendarUIState(
-                    eventsSyncResult = CustomResult.InProgress,
+                    eventsSyncResult = CustomResult.Success,
                     upcomingEvents = /*listOf()*/ List(50) {
                         UpcomingEventData(
                             id = it.toLong(),
