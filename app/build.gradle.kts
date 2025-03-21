@@ -1,3 +1,5 @@
+import com.google.firebase.crashlytics.buildtools.gradle.CrashlyticsExtension
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -29,6 +31,16 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            manifestPlaceholders["crashlyticsCollectionEnabled"] = true
+            manifestPlaceholders["analyticsCollectionEnabled"] = true
+            ndk.debugSymbolLevel = "FULL"
+            configure<CrashlyticsExtension> {
+                mappingFileUploadEnabled = true
+            }
+        }
+        debug {
+            manifestPlaceholders["crashlyticsCollectionEnabled"] = false
+            manifestPlaceholders["analyticsCollectionEnabled"] = false
         }
     }
     compileOptions {
