@@ -1,4 +1,4 @@
-package com.suit.utility.test
+package com.suit.testutil.test
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,7 +15,6 @@ import androidx.compose.ui.test.junit4.ComposeContentTestRule
 import androidx.test.core.app.ApplicationProvider
 import com.suit.utility.ui.CustomSnackbar
 import com.suit.utility.ui.SnackbarController
-import kotlinx.coroutines.test.TestScope
 
 fun ComposeContentTestRule.setContentWithSnackbar(
     composable: @Composable () -> Unit,
@@ -41,7 +40,7 @@ fun ComposeContentTestRule.setContentWithSnackbar(
                 }
             }
         ) { innerPadding ->
-            Box(modifier = Modifier.fillMaxSize()
+            Box(modifier = Modifier.Companion.fillMaxSize()
                 .padding(innerPadding)) {
                 composable()
             }

@@ -17,7 +17,8 @@ import com.suit.dndCalendar.impl.helpers.TestHelpers
 import com.suit.dndcalendar.api.CalendarEventChecker
 import com.suit.dndcalendar.api.UpcomingEventData
 import com.suit.dndcalendar.api.UpcomingEventsManager
-import com.suit.utility.test.MainDispatcherRule
+import com.suit.testutil.test.MainDispatcherRule
+import com.suit.testutil.test.analyticsMock
 import junit.framework.TestCase.assertEquals
 import junit.framework.TestCase.assertTrue
 import kotlinx.coroutines.CoroutineScope
@@ -66,6 +67,7 @@ class DNDReceiverTests {
                     contentResolver = context.contentResolver,
                     clock = clock
                 ) }
+                single { analyticsMock() }
                 single<UpcomingEventsManager> {
                     UpcomingEventsManagerImpl(
                         context = context,

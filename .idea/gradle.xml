@@ -16,10 +16,10 @@
             <option value="$PROJECT_DIR$/dndCalendar/impl" />
             <option value="$PROJECT_DIR$/feature" />
             <option value="$PROJECT_DIR$/feature/dndCalendar" />
+            <option value="$PROJECT_DIR$/testUtil" />
             <option value="$PROJECT_DIR$/utility" />
           </set>
         </option>
-        <option name="resolveExternalAnnotations" value="false" />
       </GradleProjectSettings>
     </option>
   </component>

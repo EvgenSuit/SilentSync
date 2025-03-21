@@ -1,4 +1,4 @@
-package com.suit.utility.test
+package com.suit.testutil.test
 
 import android.content.Context
 import androidx.annotation.StringRes
