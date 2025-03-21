@@ -10,9 +10,9 @@ import com.suit.dndcalendar.api.DNDScheduleCalendarCriteria
 import com.suit.dndcalendar.api.UpcomingEventData
 import com.suit.feature.dndcalendar.presentation.DNDCalendarUIState
 import com.suit.feature.dndcalendar.presentation.ui.DNDCalendarContent
-import com.suit.utility.test.MainDispatcherRule
-import com.suit.utility.test.getString
-import com.suit.utility.test.setContentWithSnackbar
+import com.suit.testutil.test.MainDispatcherRule
+import com.suit.testutil.test.getString
+import com.suit.testutil.test.setContentWithSnackbar
 import com.suit.utility.ui.CustomResult
 import org.junit.Rule
 import org.junit.Test

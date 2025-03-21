@@ -21,8 +21,9 @@ import com.suit.dndCalendar.impl.receivers.CalendarChangeReceiver
 import com.suit.dndcalendar.api.CalendarEventChecker
 import com.suit.dndcalendar.api.DNDCalendarScheduler
 import com.suit.dndcalendar.api.UpcomingEventData
+import com.suit.testutil.test.MainDispatcherRule
+import com.suit.testutil.test.analyticsMock
 import com.suit.utility.NoCalendarCriteriaFound
-import com.suit.utility.test.MainDispatcherRule
 import junit.framework.TestCase.assertEquals
 import junit.framework.TestCase.assertFalse
 import junit.framework.TestCase.assertTrue
@@ -91,6 +92,7 @@ class CalendarChangeReceiverTests {
         startKoin {
             modules(module {
                 single<Clock> { testClock }
+                single { analyticsMock() }
                 single<CoroutineScope> { TestScope() }
                 single<DNDCalendarScheduler> { dndCalendarScheduler }
                 single<CalendarEventChecker> { CalendarEventCheckerImpl(

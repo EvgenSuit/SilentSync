@@ -6,17 +6,20 @@ import com.suit.dndcalendar.api.DNDScheduleCalendarCriteria
 import com.suit.dndcalendar.api.DNDScheduleCalendarCriteriaManager
 import com.suit.dndcalendar.api.UpcomingEventData
 import com.suit.dndcalendar.api.UpcomingEventsManager
+import com.suit.feature.dndcalendar.presentation.DNDCalendarCriteriaDeletion
 import com.suit.feature.dndcalendar.presentation.DNDCalendarIntent
 import com.suit.feature.dndcalendar.presentation.DNDCalendarViewModel
-import com.suit.feature.dndcalendar.presentation.DNDCalendarCriteriaDeletion
+import com.suit.testutil.test.MainDispatcherRule
+import com.suit.testutil.test.analyticsMock
 import com.suit.utility.NoCalendarCriteriaFound
-import com.suit.utility.test.MainDispatcherRule
+import com.suit.utility.analytics.SilentSyncAnalytics
 import com.suit.utility.ui.CustomResult
 import com.suit.utility.ui.DNDCalendarUIEvent
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import junit.framework.TestCase.assertEquals
 import junit.framework.TestCase.assertFalse
 import junit.framework.TestCase.assertTrue
@@ -33,6 +36,7 @@ class DNDCalendarViewModelTests {
     private lateinit var dndScheduleCalendarCriteriaManager: DNDScheduleCalendarCriteriaManager
     private lateinit var viewModel: DNDCalendarViewModel
     private lateinit var upcomingEventsManager: UpcomingEventsManager
+    private lateinit var analyticsMock: SilentSyncAnalytics
 
     @get: Rule
     val mainDispatcherRule = MainDispatcherRule()
@@ -66,11 +70,13 @@ class DNDCalendarViewModelTests {
             }
             every { upcomingEventsFlow() } returns flowOf(if (isUpcomingEventPresent) listOf(upcomingEventData) else listOf())
         }
+        analyticsMock = analyticsMock()
         viewModel = DNDCalendarViewModel(
             dndCalendarScheduler = dndCalendarScheduler,
             dndScheduleCalendarCriteriaManager = dndScheduleCalendarCriteriaManager,
             upcomingEventsManager = upcomingEventsManager,
-            dispatcher = mainDispatcherRule.dispatcher
+            dispatcher = mainDispatcherRule.dispatcher,
+            silentSyncAnalytics = analyticsMock
         )
     }
 
@@ -119,6 +125,7 @@ class DNDCalendarViewModelTests {
                 assertEquals(CustomResult.Error, state.eventsSyncResult)
             }
         }
+        verify { analyticsMock.recordException(exception) }
     }
 
     @Test
@@ -202,7 +209,8 @@ class DNDCalendarViewModelTests {
     }
     @Test
     fun toggleDNDMode_dndOn_exception_snackbarShown() = runTest {
-        setup(toggleDNDModeException = RuntimeException(""))
+        val exception = RuntimeException("")
+        setup(toggleDNDModeException = exception)
 
         launch {
             viewModel.uiEvents.test {
@@ -211,6 +219,7 @@ class DNDCalendarViewModelTests {
         }
 
         toggleDNDMode_dndOn_helper(set = true)
+        verify { analyticsMock.recordException(exception) }
     }
     private suspend fun TestScope.toggleDNDMode_dndOn_helper(set: Boolean) {
         viewModel.uiState.test {

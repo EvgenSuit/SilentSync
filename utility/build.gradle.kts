@@ -52,9 +52,6 @@ dependencies {
     implementation(libs.firebase.crashlytics)
     implementation(libs.firebase.analytics)
 
-    implementation(libs.kotlinx.coroutines.test)
-    implementation(libs.junit)
-    implementation(libs.androidx.ui.test.junit4.android)
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
 

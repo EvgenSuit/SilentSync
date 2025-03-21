@@ -1,12 +1,11 @@
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.ksp.plugin)
-    alias(libs.plugins.androidx.room)
+    alias(libs.plugins.kotlin.compose)
 }
 
 android {
-    namespace = "com.suit.dndCalendar.impl"
+    namespace = "com.suit.testutil"
     compileSdk = 35
 
     defaultConfig {
@@ -15,9 +14,7 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles("consumer-rules.pro")
     }
-    room {
-        schemaDirectory("$projectDir/schemas")
-    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
@@ -31,41 +28,29 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
-    testOptions {
-        unitTests {
-            isIncludeAndroidResources = true
-        }
-    }
     kotlinOptions {
         jvmTarget = "11"
     }
 }
 
 dependencies {
-
-    implementation(project(":dndCalendar:api"))
     implementation(project(":utility"))
-
-    implementation(libs.androidx.room.runtime)
-    ksp(libs.androidx.room.compiler)
-    implementation(libs.androidx.room.ktx)
-
-    implementation(libs.koin.core)
-    implementation(libs.koin.android)
-
     implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.activity.compose)
+    implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.androidx.ui)
+    implementation(libs.androidx.ui.graphics)
+    implementation(libs.androidx.ui.tooling.preview)
+    implementation(libs.androidx.material3)
 
-    implementation(libs.gson)
+    implementation(libs.kotlinx.coroutines.test)
+    implementation(libs.junit)
+    implementation(libs.androidx.ui.test.junit4.android)
 
-    testImplementation(project(":testUtil"))
+    implementation(libs.mockk)
+
     testImplementation(libs.junit)
-    testImplementation(libs.kotlin.test.junit)
-    testImplementation(libs.androidx.arch.testing)
-    testImplementation(libs.kotlinx.coroutines.test)
-    testImplementation(libs.robolectric)
-    testImplementation(libs.test.core.ktx)
-    testImplementation(libs.androidx.sqlite)
-
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
 }

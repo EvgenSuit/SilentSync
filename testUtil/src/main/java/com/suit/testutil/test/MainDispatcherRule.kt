@@ -1,4 +1,4 @@
-package com.suit.utility.test
+package com.suit.testutil.test
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
