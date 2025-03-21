@@ -46,6 +46,12 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
 
+    implementation(libs.koin.core)
+
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.crashlytics)
+    implementation(libs.firebase.analytics)
+
     implementation(libs.kotlinx.coroutines.test)
     implementation(libs.junit)
     implementation(libs.androidx.ui.test.junit4.android)

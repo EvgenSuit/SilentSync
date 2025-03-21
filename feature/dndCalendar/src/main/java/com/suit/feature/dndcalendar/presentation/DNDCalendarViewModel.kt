@@ -9,6 +9,8 @@ import com.suit.dndcalendar.api.UpcomingEventData
 import com.suit.dndcalendar.api.UpcomingEventsManager
 import com.suit.feature.dndcalendar.R
 import com.suit.utility.NoCalendarCriteriaFound
+import com.suit.utility.analytics.SilentSyncAnalytics
+import com.suit.utility.analytics.SilentSyncEvent
 import com.suit.utility.ui.CustomResult
 import com.suit.utility.ui.DNDCalendarUIEvent
 import com.suit.utility.ui.UIText
@@ -28,7 +30,8 @@ class DNDCalendarViewModel(
     private val dndCalendarScheduler: DNDCalendarScheduler,
     private val dndScheduleCalendarCriteriaManager: DNDScheduleCalendarCriteriaManager,
     private val upcomingEventsManager: UpcomingEventsManager,
-    private val dispatcher: CoroutineDispatcher
+    private val dispatcher: CoroutineDispatcher,
+    private val silentSyncAnalytics: SilentSyncAnalytics
 ): ViewModel() {
     private val upcomingEvents = upcomingEventsManager.upcomingEventsFlow()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(3000), listOf())
@@ -72,6 +75,7 @@ class DNDCalendarViewModel(
                     }
                 }
             } catch (e: Exception) {
+                silentSyncAnalytics.recordException(e)
                 _uiEvents.emit(DNDCalendarUIEvent.ShowSnackbar(UIText.StringResource(R.string.could_not_toggle_dnd_mode)))
             }
         }
@@ -125,10 +129,12 @@ class DNDCalendarViewModel(
             try {
                 _uiState.update { it.copy(eventsSyncResult = CustomResult.InProgress) }
                 dndCalendarScheduler.schedule()
+                silentSyncAnalytics.logEvent(SilentSyncEvent.SYNC_EVENTS)
                 _uiState.update { it.copy(eventsSyncResult = CustomResult.Success) }
             } catch (e: Exception) {
                 _uiState.update { it.copy(eventsSyncResult = CustomResult.Error) }
                 if (e !is NoCalendarCriteriaFound) {
+                    silentSyncAnalytics.recordException(e)
                     _uiEvents.emit(DNDCalendarUIEvent.ShowSnackbar(UIText.StringResource(com.suit.utility.R.string.could_not_sync_events)))
                 }
             }
@@ -143,10 +149,12 @@ class DNDCalendarViewModel(
                     dndScheduleCalendarCriteriaManager.changeCriteria(it)
                 }
                 dndCalendarScheduler.schedule()
+                silentSyncAnalytics.logEvent(SilentSyncEvent.SYNC_EVENTS)
                 _uiState.update { it.copy(eventsSyncResult = CustomResult.Success) }
                 _uiEvents.emit(DNDCalendarUIEvent.Unfocus)
                 _uiEvents.emit(DNDCalendarUIEvent.ShowSnackbar(UIText.StringResource(R.string.successfully_synced_events)))
             } catch (e: Exception) {
+                silentSyncAnalytics.recordException(e)
                 _uiEvents.emit(DNDCalendarUIEvent.ShowSnackbar(UIText.StringResource(com.suit.utility.R.string.could_not_sync_events)))
                 _uiState.update { it.copy(eventsSyncResult = CustomResult.Error) }
             }
