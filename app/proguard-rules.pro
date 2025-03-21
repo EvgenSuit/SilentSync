@@ -1,0 +1,3 @@
+-dontwarn com.google.android.gms.common.annotation.NoNullnessRewrite
+-keepattributes SourceFile,LineNumberTable        # Keep file names and line numbers.
+-keep public class * extends java.lang.Exception
