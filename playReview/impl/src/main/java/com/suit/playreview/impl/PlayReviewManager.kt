@@ -12,6 +12,9 @@ import java.time.Duration
 import java.time.Instant
 
 val Context.playReviewDatastore by dataStore("play_review_data.json", PlayReviewDataSerializer)
+internal enum class PlayReviewManagerDiff(val days: Long) {
+    DAYS(3)
+}
 class PlayReviewManagerImpl(
     private val trustedTimeClient: TrustedTimeClient?,
     private val dataStore: DataStore<PlayReviewData>
@@ -32,18 +35,15 @@ class PlayReviewManagerImpl(
     private fun isEligible(
         currTime: Instant,
         installTime: Instant
-    ): Boolean = Duration.between(installTime, currTime) >= Duration.ofMinutes(1)
+    ): Boolean = Duration.between(installTime, currTime) >= Duration.ofDays(PlayReviewManagerDiff.DAYS.days)
 
     override suspend fun doShowDialog(): Boolean {
         val data = getData()
-        Log.d("PlayReview", "Returning false: ${trustedTimeClient == null || (data.installTime != null && data.didShow)}")
         if (trustedTimeClient == null || (data.installTime != null && data.didShow)) return false
 
         val installTime = data.installTime
-        Log.d("PlayReview", "Instant: $installTime")
         if (installTime == null) {
             val currTime = trustedTimeClient.computeCurrentInstant()
-            Log.d("PlayReview", "Time: $currTime")
             if (currTime == null) return false
             recordInstallTime(currTime)
             return false
@@ -61,6 +61,5 @@ class PlayReviewManagerImpl(
                 installTime = it.installTime
             )
         }
-        Log.d("PlayReview", "labeled as shown")
     }
 }

@@ -1,8 +1,6 @@
 package com.suit.silentsync
 
-import android.app.Activity
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -31,50 +29,36 @@ import com.google.android.gms.time.TrustedTime
 import com.google.android.play.core.ktx.launchReview
 import com.google.android.play.core.ktx.requestReview
 import com.google.android.play.core.review.ReviewManagerFactory
-import com.suit.playreview.api.PlayReviewManager
 import com.suit.playreview.impl.PlayReviewManagerImpl
 import com.suit.playreview.impl.playReviewDatastore
-import com.suit.silentsync.SilentSyncApplication
 import com.suit.silentsync.navigation.SilentSyncNavHost
 import com.suit.utility.analytics.SilentSyncAnalytics
 import com.suit.utility.ui.CustomSnackbar
 import com.suit.utility.ui.LocalSnackbarController
 import com.suit.utility.ui.SnackbarController
 import com.suit.utility.ui.theme.SilentSyncTheme
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
-import org.koin.android.ext.android.inject
-import org.koin.core.runOnKoinStarted
-import org.koin.core.waitAllStartJobs
 import org.koin.mp.KoinPlatform
 
 class MainActivity : ComponentActivity() {
     private fun managePlayReview() {
         lifecycleScope.launch {
-            val silentSyncAnalytics = KoinPlatform.getKoin().get<SilentSyncAnalytics>()
-            //try {
-            Log.d("PlayReview", "getting client")
-            val trustedTimeClient = TrustedTime.createClient(applicationContext).await()
-            val playReviewManager = PlayReviewManagerImpl(
-                trustedTimeClient = trustedTimeClient,
-                dataStore = playReviewDatastore
-            )
-            if (playReviewManager.doShowDialog()) {
-                Log.d("PlayReview", "showing dialog")
-                //try {
-                val manager = ReviewManagerFactory.create(applicationContext)
-                val reviewInfo = manager.requestReview()
-                manager.launchReview(this@MainActivity, reviewInfo)
-                playReviewManager.labelDialogAsShown()
-                /*} catch (e: Exception) {
-                    silentSyncAnalytics.recordException(e)
-                }*/
+            try {
+                val trustedTimeClient = TrustedTime.createClient(applicationContext).await()
+                val playReviewManager = PlayReviewManagerImpl(
+                    trustedTimeClient = trustedTimeClient,
+                    dataStore = playReviewDatastore
+                )
+                if (playReviewManager.doShowDialog()) {
+                    val manager = ReviewManagerFactory.create(applicationContext)
+                    val reviewInfo = manager.requestReview()
+                    manager.launchReview(this@MainActivity, reviewInfo)
+                    playReviewManager.labelDialogAsShown()
+                }
+            } catch (e: Exception) {
+                KoinPlatform.getKoin().get<SilentSyncAnalytics>().recordException(e)
             }
-            /*} catch (e: Exception) {
-                silentSyncAnalytics.recordException(e)
-            }*/
         }
     }
 
