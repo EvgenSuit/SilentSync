@@ -24,16 +24,49 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.lifecycle.lifecycleScope
+import com.google.android.gms.time.TrustedTime
+import com.google.android.play.core.ktx.launchReview
+import com.google.android.play.core.ktx.requestReview
+import com.google.android.play.core.review.ReviewManagerFactory
+import com.suit.playreview.impl.PlayReviewManagerImpl
+import com.suit.playreview.impl.playReviewDatastore
 import com.suit.silentsync.navigation.SilentSyncNavHost
+import com.suit.utility.analytics.SilentSyncAnalytics
 import com.suit.utility.ui.CustomSnackbar
 import com.suit.utility.ui.LocalSnackbarController
 import com.suit.utility.ui.SnackbarController
 import com.suit.utility.ui.theme.SilentSyncTheme
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
+import org.koin.mp.KoinPlatform
 
 class MainActivity : ComponentActivity() {
+    private fun managePlayReview() {
+        lifecycleScope.launch {
+            try {
+                val trustedTimeClient = TrustedTime.createClient(applicationContext).await()
+                val playReviewManager = PlayReviewManagerImpl(
+                    trustedTimeClient = trustedTimeClient,
+                    dataStore = playReviewDatastore
+                )
+                if (playReviewManager.doShowDialog()) {
+                    val manager = ReviewManagerFactory.create(applicationContext)
+                    val reviewInfo = manager.requestReview()
+                    manager.launchReview(this@MainActivity, reviewInfo)
+                    playReviewManager.labelDialogAsShown()
+                }
+            } catch (e: Exception) {
+                KoinPlatform.getKoin().get<SilentSyncAnalytics>().recordException(e)
+            }
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        managePlayReview()
 
         setContent {
             val snackbarHostState = remember { SnackbarHostState() }

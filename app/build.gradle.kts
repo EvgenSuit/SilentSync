@@ -63,6 +63,8 @@ android {
 dependencies {
 
     implementation(project(":feature:dndCalendar"))
+    implementation(project(":playReview:impl"))
+    implementation(project(":playReview:api"))
     implementation(project(":utility"))
 
     implementation(libs.kotlinx.serialization.json)
@@ -81,6 +83,16 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
     implementation(libs.androidx.junit.ktx)
+    implementation(libs.play.services.time)
+    implementation(libs.coroutines.play.services)
+    implementation(libs.play.review)
+    implementation(libs.play.review.ktx)
+    implementation(libs.androidx.datastore)
+
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.crashlytics)
+    implementation(libs.firebase.analytics)
+    implementation(libs.koin.coroutines)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
@@ -91,7 +103,6 @@ dependencies {
     testImplementation(libs.androidx.sqlite)
 
     androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
