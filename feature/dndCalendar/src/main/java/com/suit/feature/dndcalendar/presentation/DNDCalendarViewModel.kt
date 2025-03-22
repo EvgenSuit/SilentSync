@@ -83,10 +83,8 @@ class DNDCalendarViewModel(
 
     private fun fetchCriteria() {
         viewModelScope.launch(dispatcher) {
-            _uiState.update { it.copy(criteriaFetchResult = CustomResult.InProgress) }
             val criteria = dndScheduleCalendarCriteriaManager.getCriteria().first()
-            _uiState.update { it.copy(criteria = criteria, criteriaFetchResult = if (criteria != null)
-                CustomResult.Success else CustomResult.Error) }
+            _uiState.update { it.copy(criteria = criteria) }
         }
     }
 
@@ -164,7 +162,6 @@ class DNDCalendarViewModel(
 
 data class DNDCalendarUIState(
     val eventsSyncResult: CustomResult = CustomResult.InProgress,
-    val criteriaFetchResult: CustomResult = CustomResult.None,
     val upcomingEvents: List<UpcomingEventData> = listOf(),
     val criteria: DNDScheduleCalendarCriteria? = null
 )
