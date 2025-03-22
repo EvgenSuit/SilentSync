@@ -4,8 +4,11 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -17,7 +20,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -27,6 +29,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -89,11 +92,65 @@ fun DNDCalendarContent(
     uiState: DNDCalendarUIState,
     onIntent: (DNDCalendarIntent) -> Unit
 ) {
+    val maxScreenWidth = dimensionResource(com.suit.utility.R.dimen.max_content_width)
+    BoxWithConstraints(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        if (this.maxWidth >= maxScreenWidth) {
+            // UI for large screens
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(10.dp)
+            ) {
+                MainScreenContent(
+                    uiState = uiState,
+                    onIntent = onIntent,
+                    modifier = Modifier.verticalScroll(rememberScrollState())
+                        .weight(1f)
+                )
+                UpcomingEventsColumn(
+                    isEventSyncInProgress = uiState.eventsSyncResult.isInProgress(),
+                    upcomingEvents = uiState.upcomingEvents,
+                    onIntent = onIntent,
+                    modifier = Modifier.weight(1f),
+                    lazyColumnModifier = Modifier.fillMaxHeight()
+                )
+            }
+        } else {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(10.dp)
+            ) {
+                MainScreenContent(
+                    uiState = uiState,
+                    onIntent = onIntent
+                )
+                Spacer(Modifier.height(9.dp))
+                HorizontalDivider(Modifier.fillMaxWidth(0.5f))
+                UpcomingEventsColumn(
+                    isEventSyncInProgress = uiState.eventsSyncResult.isInProgress(),
+                    upcomingEvents = uiState.upcomingEvents,
+                    onIntent = onIntent,
+                    lazyColumnModifier = Modifier
+                        .height(400.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun MainScreenContent(
+    uiState: DNDCalendarUIState,
+    onIntent: (DNDCalendarIntent) -> Unit,
+    modifier: Modifier = Modifier
+) {
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(10.dp)
-            .verticalScroll(rememberScrollState()),
+        modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(9.dp)
     ) {
         EventsSyncStatusComponent(
@@ -108,49 +165,47 @@ fun DNDCalendarContent(
         DNDCriteriaComponent(
             labelId = R.string.like_name_criteria,
             criteria = uiState.criteria?.likeNames,
-            onInput = { onIntent(DNDCalendarIntent.InputCriteria(
-                DNDCalendarCriteriaInput.NameLike(it)
-            )) },
+            onInput = {
+                onIntent(
+                    DNDCalendarIntent.InputCriteria(
+                        DNDCalendarCriteriaInput.NameLike(it)
+                    )
+                )
+            },
             onDelete = {
-                onIntent(DNDCalendarIntent.DeleteCriteria(
-                    DNDCalendarCriteriaDeletion.NameLike(it)
-                ))
+                onIntent(
+                    DNDCalendarIntent.DeleteCriteria(
+                        DNDCalendarCriteriaDeletion.NameLike(it)
+                    )
+                )
             }
         )
         DNDCriteriaComponent(
             labelId = R.string.participants,
             criteria = uiState.criteria?.attendees,
-            onInput = { onIntent(DNDCalendarIntent.InputCriteria(
-                DNDCalendarCriteriaInput.Participant(it)
-            )) },
+            onInput = {
+                onIntent(
+                    DNDCalendarIntent.InputCriteria(
+                        DNDCalendarCriteriaInput.Participant(it)
+                    )
+                )
+            },
             onDelete = {
-                onIntent(DNDCalendarIntent.DeleteCriteria(
-                    DNDCalendarCriteriaDeletion.Participant(it)
-                ))
+                onIntent(
+                    DNDCalendarIntent.DeleteCriteria(
+                        DNDCalendarCriteriaDeletion.Participant(it)
+                    )
+                )
             }
         )
         CommonButton(
             text = stringResource(R.string.sync_events),
             onClick = { onIntent(DNDCalendarIntent.Schedule) }
         )
-
-        Box(
-            Modifier.fillMaxWidth(),
-            contentAlignment = Alignment.Center
-        ) {
-            HorizontalDivider(Modifier.fillMaxWidth(0.5f))
-        }
-
-        Spacer(Modifier.height(10.dp))
-        UpcomingEventsColumn(
-            isEventSyncInProgress = uiState.eventsSyncResult.isInProgress(),
-            upcomingEvents = uiState.upcomingEvents,
-            onIntent = onIntent
-        )
     }
 }
 
-@Preview
+@Preview(device = "spec:width=800dp,height=800dp,dpi=240")
 @Composable
 fun DNDCalendarContentPreview() {
     SilentSyncTheme {

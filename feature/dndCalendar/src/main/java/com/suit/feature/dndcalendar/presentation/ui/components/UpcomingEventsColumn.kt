@@ -24,9 +24,13 @@ import com.suit.feature.dndcalendar.presentation.DNDCalendarIntent
 fun UpcomingEventsColumn(
     isEventSyncInProgress: Boolean,
     upcomingEvents: List<UpcomingEventData>,
-    onIntent: (DNDCalendarIntent) -> Unit
+    onIntent: (DNDCalendarIntent) -> Unit,
+    modifier: Modifier = Modifier,
+    lazyColumnModifier: Modifier
 ) {
-    Column {
+    Column(
+        modifier = modifier
+    ) {
         Text(
             stringResource(R.string.upcoming_events),
             style = MaterialTheme.typography.titleSmall
@@ -47,9 +51,8 @@ fun UpcomingEventsColumn(
             } else {
                 LazyColumn(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier
+                    modifier = lazyColumnModifier
                         .fillMaxWidth()
-                        .height(400.dp)
                         .testTag("UpcomingEventsColumn")
                 ) {
                     items(upcomingEvents, key = { it.id }) { event ->
