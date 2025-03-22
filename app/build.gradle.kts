@@ -69,6 +69,7 @@ dependencies {
 
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.androidx.navigation.compose)
+    implementation(libs.androidx.splashscreen)
 
     implementation(libs.koin.core)
     implementation(libs.koin.android)
