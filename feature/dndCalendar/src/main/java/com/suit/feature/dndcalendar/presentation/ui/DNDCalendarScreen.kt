@@ -89,70 +89,64 @@ fun DNDCalendarContent(
     uiState: DNDCalendarUIState,
     onIntent: (DNDCalendarIntent) -> Unit
 ) {
-    // TODO remove this refresh box
-    PullToRefreshBox(
-        isRefreshing = uiState.criteriaFetchResult.isInProgress(),
-        onRefresh = { onIntent(DNDCalendarIntent.GetCriteria) }
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(10.dp)
+            .verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(9.dp)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(10.dp)
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(9.dp)
-        ) {
-            EventsSyncStatusComponent(
-                eventsSyncResult = uiState.eventsSyncResult
-            )
-            Spacer(Modifier.height(27.dp))
-            Text(
-                stringResource(R.string.set_dnd_toggle_criteria_prompt),
-                style = MaterialTheme.typography.titleSmall
-            )
-            Spacer(Modifier.height(10.dp))
-            DNDCriteriaComponent(
-                labelId = R.string.like_name_criteria,
-                criteria = uiState.criteria?.likeNames,
-                onInput = { onIntent(DNDCalendarIntent.InputCriteria(
-                    DNDCalendarCriteriaInput.NameLike(it)
-                )) },
-                onDelete = {
-                    onIntent(DNDCalendarIntent.DeleteCriteria(
-                        DNDCalendarCriteriaDeletion.NameLike(it)
-                    ))
-                }
-            )
-            DNDCriteriaComponent(
-                labelId = R.string.participants,
-                criteria = uiState.criteria?.attendees,
-                onInput = { onIntent(DNDCalendarIntent.InputCriteria(
-                    DNDCalendarCriteriaInput.Participant(it)
-                )) },
-                onDelete = {
-                    onIntent(DNDCalendarIntent.DeleteCriteria(
-                        DNDCalendarCriteriaDeletion.Participant(it)
-                    ))
-                }
-            )
-            CommonButton(
-                text = stringResource(R.string.sync_events),
-                onClick = { onIntent(DNDCalendarIntent.Schedule) }
-            )
-
-            Box(
-                Modifier.fillMaxWidth(),
-                contentAlignment = Alignment.Center
-            ) {
-                HorizontalDivider(Modifier.fillMaxWidth(0.5f))
+        EventsSyncStatusComponent(
+            eventsSyncResult = uiState.eventsSyncResult
+        )
+        Spacer(Modifier.height(27.dp))
+        Text(
+            stringResource(R.string.set_dnd_toggle_criteria_prompt),
+            style = MaterialTheme.typography.titleSmall
+        )
+        Spacer(Modifier.height(10.dp))
+        DNDCriteriaComponent(
+            labelId = R.string.like_name_criteria,
+            criteria = uiState.criteria?.likeNames,
+            onInput = { onIntent(DNDCalendarIntent.InputCriteria(
+                DNDCalendarCriteriaInput.NameLike(it)
+            )) },
+            onDelete = {
+                onIntent(DNDCalendarIntent.DeleteCriteria(
+                    DNDCalendarCriteriaDeletion.NameLike(it)
+                ))
             }
+        )
+        DNDCriteriaComponent(
+            labelId = R.string.participants,
+            criteria = uiState.criteria?.attendees,
+            onInput = { onIntent(DNDCalendarIntent.InputCriteria(
+                DNDCalendarCriteriaInput.Participant(it)
+            )) },
+            onDelete = {
+                onIntent(DNDCalendarIntent.DeleteCriteria(
+                    DNDCalendarCriteriaDeletion.Participant(it)
+                ))
+            }
+        )
+        CommonButton(
+            text = stringResource(R.string.sync_events),
+            onClick = { onIntent(DNDCalendarIntent.Schedule) }
+        )
 
-            Spacer(Modifier.height(10.dp))
-            UpcomingEventsColumn(
-                isEventSyncInProgress = uiState.eventsSyncResult.isInProgress(),
-                upcomingEvents = uiState.upcomingEvents,
-                onIntent = onIntent
-            )
+        Box(
+            Modifier.fillMaxWidth(),
+            contentAlignment = Alignment.Center
+        ) {
+            HorizontalDivider(Modifier.fillMaxWidth(0.5f))
         }
+
+        Spacer(Modifier.height(10.dp))
+        UpcomingEventsColumn(
+            isEventSyncInProgress = uiState.eventsSyncResult.isInProgress(),
+            upcomingEvents = uiState.upcomingEvents,
+            onIntent = onIntent
+        )
     }
 }
 
