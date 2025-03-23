@@ -26,4 +26,6 @@ SilentSync is an Android app that makes it easy to avoid being distracted by not
 
 <img src = "https://github.com/user-attachments/assets/50931e9c-3379-4364-8b0b-4b771ea95f91" height="900">
 
-<img src = "https://github.com/user-attachments/assets/75789bf5-68ae-4c62-9720-89252bcc3570" height="900">
+<img src = "https://github.com/user-attachments/assets/2bb36356-617b-4e10-8e2d-2f68af8940b7" height="900">
+
+
