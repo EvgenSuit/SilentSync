@@ -119,7 +119,6 @@ fun DNDCalendarContent(
             }
         } else {
             Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
@@ -131,6 +130,7 @@ fun DNDCalendarContent(
                 )
                 Spacer(Modifier.height(9.dp))
                 HorizontalDivider(Modifier.fillMaxWidth(0.5f))
+                Spacer(Modifier.height(9.dp))
                 UpcomingEventsColumn(
                     isEventSyncInProgress = uiState.eventsSyncResult.isInProgress(),
                     upcomingEvents = uiState.upcomingEvents,

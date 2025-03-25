@@ -26,7 +26,6 @@ class EventCalendarProvider: ContentProvider() {
     override fun onCreate(): Boolean {
         val tContext = context
         if (tContext == null) {
-            println("Context is null")
             return false
         }
         calendarDBHelper = CalendarDBHelper(tContext)

@@ -17,7 +17,6 @@ internal class CalendarEventCheckerImpl(
         getCursor(id)?.use {
             // returns true if curr time is bigger than or equal to event's start time (there's always a small delay in dnd toggle execution)
             if (it.moveToFirst()) {
-                Log.d("EventScheduler", "DTSTART: ${it.getLong(it.getColumnIndexOrThrow(CalendarContract.Events.DTSTART))}, curr: ${clock.millis()}")
                 clock.millis() - it.getLong(it.getColumnIndexOrThrow(CalendarContract.Events.DTSTART)) >= 0
             } else false
         } ?: false
@@ -26,7 +25,6 @@ internal class CalendarEventCheckerImpl(
         getCursor(id)?.use {
             // returns true if event's end time (with tolerance) is bigger than or equal to the curr time (there's always a small delay in dnd toggle execution)
             if (it.moveToFirst()) {
-                Log.d("EventScheduler", "DTEND: ${it.getLong(it.getColumnIndexOrThrow(CalendarContract.Events.DTEND))}, curr: ${clock.millis()}")
                 it.getLong(it.getColumnIndexOrThrow(CalendarContract.Events.DTEND)) + 5000L - clock.millis() >= 0
             } else false
         } ?: false

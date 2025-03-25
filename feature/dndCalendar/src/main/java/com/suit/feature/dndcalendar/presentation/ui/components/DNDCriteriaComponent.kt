@@ -53,72 +53,66 @@ fun DNDCriteriaComponent(
     val scope = rememberCoroutineScope()
     Column(
         modifier = Modifier
-            .fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(0.dp)
+            .fillMaxWidth()
+            .padding(horizontal = 30.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 30.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            OutlinedTextField(
-                currCriteriaValue,
-                onValueChange = {
-                    if (it.length <= maxCriteriaLength) {
-                        currCriteriaValue = it
+        OutlinedTextField(
+            currCriteriaValue,
+            onValueChange = {
+                if (it.length <= maxCriteriaLength) {
+                    currCriteriaValue = it
+                }
+            },
+            supportingText = {
+                if (currCriteriaValue.isNotBlank()) {
+                    Box(Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.CenterEnd) {
+                        Text("${currCriteriaValue.length}/$maxCriteriaLength")
                     }
-                },
-                supportingText = {
-                    if (currCriteriaValue.isNotBlank()) {
-                        Box(Modifier.fillMaxWidth(),
-                            contentAlignment = Alignment.CenterEnd) {
-                            Text("${currCriteriaValue.length}/$maxCriteriaLength")
-                        }
-                    }
-                },
-                label = {
-                    Text(
-                        stringResource(labelId)
-                    )
-                },
-                trailingIcon = {
-                    if (currCriteriaValue.isNotBlank() &&
-                        (criteria.isNullOrEmpty() || !criteria.contains(currCriteriaValue.trim()))) {
-                        CriteriaPreview(
-                            onClick = {
-                                scope.launch {
-                                    onInput(currCriteriaValue)
-                                    currCriteriaValue = ""
+                }
+            },
+            label = {
+                Text(
+                    stringResource(labelId)
+                )
+            },
+            trailingIcon = {
+                if (currCriteriaValue.isNotBlank() &&
+                    (criteria.isNullOrEmpty() || !criteria.contains(currCriteriaValue.trim()))) {
+                    CriteriaPreview(
+                        onClick = {
+                            scope.launch {
+                                onInput(currCriteriaValue)
+                                currCriteriaValue = ""
 
-                                    val lastItemIndex = lazyRowState.layoutInfo.totalItemsCount-1
-                                    if (lastItemIndex > 1) lazyRowState.animateScrollToItem(lastItemIndex)
-                                }
+                                val lastItemIndex = lazyRowState.layoutInfo.totalItemsCount-1
+                                if (lastItemIndex > 1) lazyRowState.animateScrollToItem(lastItemIndex)
                             }
-                        )
-                    }
-                },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
-            )
-            if (!criteria.isNullOrEmpty()) {
-                LazyRow(
-                    state = lazyRowState,
-                    contentPadding = PaddingValues(horizontal = 12.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .border(width = 1.dp,
-                            shape = RoundedCornerShape(10.dp),
-                            color = MaterialTheme.colorScheme.secondary)
-                ) {
-                    items(criteria) {
-                        CriteriaComponent(
-                            criteria = it,
-                            onDelete = { onDelete(it) },
-                            modifier = Modifier
-                                .animateItem()
-                        )
-                    }
+                        }
+                    )
+                }
+            },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth()
+        )
+        if (!criteria.isNullOrEmpty()) {
+            LazyRow(
+                state = lazyRowState,
+                contentPadding = PaddingValues(horizontal = 12.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(width = 1.dp,
+                        shape = RoundedCornerShape(10.dp),
+                        color = MaterialTheme.colorScheme.secondary)
+            ) {
+                items(criteria) {
+                    CriteriaComponent(
+                        criteria = it,
+                        onDelete = { onDelete(it) },
+                        modifier = Modifier
+                            .animateItem()
+                    )
                 }
             }
         }

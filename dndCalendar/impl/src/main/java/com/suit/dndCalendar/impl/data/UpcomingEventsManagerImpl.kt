@@ -35,6 +35,12 @@ internal class UpcomingEventsManagerImpl(
         db.dao().updateDndOnToggle(id, set = false)
     }
 
+    override suspend fun removeDndOffOverlappingToggle(id: Long) {
+        val pendingIntent = constructPendingIntent(id, dndOn = false)
+        context.getSystemService(AlarmManager::class.java)
+            .cancel(pendingIntent)
+    }
+
     override suspend fun setDndOffToggle(id: Long, endTime: Long) {
         val pendingIntent = constructPendingIntent(id, dndOn = false)
         context.getSystemService(AlarmManager::class.java)
