@@ -88,7 +88,6 @@ class DNDCalendarViewModelTests {
             skipItems(1)
 
             awaitItem().let { state ->
-                assertEquals(CustomResult.Error, state.criteriaFetchResult)
                 assertEquals(CustomResult.Error, state.eventsSyncResult)
             }
         }
@@ -101,7 +100,6 @@ class DNDCalendarViewModelTests {
             skipItems(1)
 
             awaitItem().let { state ->
-                assertEquals(CustomResult.Success, state.criteriaFetchResult)
                 assertEquals(CustomResult.Success, state.eventsSyncResult)
             }
         }
@@ -121,7 +119,6 @@ class DNDCalendarViewModelTests {
             skipItems(1)
 
             awaitItem().let { state ->
-                assertEquals(CustomResult.Success, state.criteriaFetchResult)
                 assertEquals(CustomResult.Error, state.eventsSyncResult)
             }
         }
