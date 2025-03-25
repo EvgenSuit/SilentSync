@@ -2,6 +2,8 @@ package com.suit.feature.dndcalendar
 
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -18,7 +20,6 @@ import com.suit.utility.ui.CustomResult
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.robolectric.RobolectricTestRunner
 
 @RunWith(AndroidJUnit4::class)
 class DNDCalendarScreenTests {
@@ -26,6 +27,15 @@ class DNDCalendarScreenTests {
     val composeRule = createComposeRule()
     @get: Rule
     val mainDispatcherRule = MainDispatcherRule()
+
+    val upcomingEvents = List(10) {
+        UpcomingEventData(
+            id = it.toLong(),
+            title = "Title $it",
+            startTime = (it*2).toLong(),
+            endTime = ((it*2)+1).toLong()
+        )
+    }
 
     @Test
     fun syncEvents_resultSuccess_eventsSyncedTextShown() {
@@ -81,12 +91,26 @@ class DNDCalendarScreenTests {
 
     @Test
     fun upcomingEventsNotEmpty() {
+        composeRule.setContentWithSnackbar(
+            composable = { DNDCalendarContent(DNDCalendarUIState(
+                upcomingEvents = upcomingEvents
+            ), onIntent = {}) }
+        ) {
+            upcomingEvents.forEach {
+                onNodeWithTag("UpcomingEventsColumn").performScrollToKey(it.id)
+                onNodeWithTag("UpcomingEventId: ${it.id}").assertExists()
+            }
+        }
+    }
+    @Test
+    fun dndOffOverlaps_dndOffOptionDisabled() {
         val upcomingEvents = List(10) {
             UpcomingEventData(
                 id = it.toLong(),
                 title = "Title $it",
                 startTime = (it*2).toLong(),
-                endTime = ((it*2)+1).toLong()
+                endTime = ((it*2)+1).toLong(),
+                doesDndOffOverlap = true
             )
         }
         composeRule.setContentWithSnackbar(
@@ -96,7 +120,8 @@ class DNDCalendarScreenTests {
         ) {
             upcomingEvents.forEach {
                 onNodeWithTag("UpcomingEventsColumn").performScrollToKey(it.id)
-                onNodeWithTag("UpcomingEventId: ${it.id}").assertExists()
+                onNodeWithTag("DND On: ${it.id}", useUnmergedTree = true).assertIsEnabled()
+                onNodeWithTag("DND Off: ${it.id}", useUnmergedTree = true).assertIsNotEnabled()
             }
         }
     }

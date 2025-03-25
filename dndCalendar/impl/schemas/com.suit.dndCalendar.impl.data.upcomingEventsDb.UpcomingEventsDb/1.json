@@ -2,11 +2,11 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "3739ff365e72948cfc868f9a7388c7f7",
+    "identityHash": "2cee4c5ee2c0eec1d0ebe6c75323143b",
     "entities": [
       {
         "tableName": "UpcomingEventData",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `title` TEXT NOT NULL, `startTime` INTEGER NOT NULL, `endTime` INTEGER NOT NULL, `scheduleDndOn` INTEGER NOT NULL, `scheduleDndOff` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `title` TEXT NOT NULL, `startTime` INTEGER NOT NULL, `endTime` INTEGER NOT NULL, `scheduleDndOn` INTEGER NOT NULL, `scheduleDndOff` INTEGER NOT NULL, `doesDndOffOverlap` INTEGER NOT NULL, PRIMARY KEY(`id`))",
         "fields": [
           {
             "fieldPath": "id",
@@ -43,6 +43,12 @@
             "columnName": "scheduleDndOff",
             "affinity": "INTEGER",
             "notNull": true
+          },
+          {
+            "fieldPath": "doesDndOffOverlap",
+            "columnName": "doesDndOffOverlap",
+            "affinity": "INTEGER",
+            "notNull": true
           }
         ],
         "primaryKey": {
@@ -58,7 +64,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '3739ff365e72948cfc868f9a7388c7f7')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '2cee4c5ee2c0eec1d0ebe6c75323143b')"
     ]
   }
 }

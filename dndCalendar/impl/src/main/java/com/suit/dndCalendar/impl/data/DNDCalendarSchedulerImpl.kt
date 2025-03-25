@@ -190,10 +190,6 @@ internal class DNDCalendarSchedulerImpl(
         when (event.deleted || event.endTime < clock.millis()) {
             true -> {
                 upcomingEventsManager.removeUpcomingEvent(event.id)
-                Log.d(
-                    "EventScheduler",
-                    "Removed dnd toggle: $event"
-                )
             }
             false -> {
                 upcomingEventsManager.apply {
@@ -202,23 +198,16 @@ internal class DNDCalendarSchedulerImpl(
                         id = event.id,
                         title = event.title,
                         startTime = event.startTime,
-                        endTime = event.endTime
-                    ) ?: event.toUpcomingEvent()
+                        endTime = event.endTime,
+                        doesDndOffOverlap = endTimeOverlaps
+                    ) ?: event.toUpcomingEvent().copy(doesDndOffOverlap = endTimeOverlaps)
                     insert(upcomingEvent)
                     if (upcomingEvent.scheduleDndOn) setDndOnToggle(event.id, event.startTime)
-                    if (upcomingEvent.scheduleDndOff) {
-                        if (!endTimeOverlaps) setDndOffToggle(event.id, event.endTime)
-                        else removeDndOffToggle(event.id)
+                    if (endTimeOverlaps) {
+                        removeDndOffOverlappingToggle(event.id)
                     }
+                    else if (upcomingEvent.scheduleDndOff) setDndOffToggle(event.id, event.endTime)
                 }
-
-                println("Scheduled DND ON for ${SimpleDateFormat("yyyy-MM-dd, HH:mm:ss").format(event.startTime)} " +
-                        "and DND OFF for ${SimpleDateFormat("yyyy-MM-dd, HH:mm:ss").format(event.endTime)}.")
-                Log.d(
-                    "EventScheduler",
-                    "Scheduled DND ON for ${SimpleDateFormat("yyyy-MM-dd, HH:mm:ss").format(event.startTime)} " +
-                            "and DND OFF for ${SimpleDateFormat("yyyy-MM-dd, HH:mm:ss").format(event.endTime)}."
-                )
             }
         }
     }

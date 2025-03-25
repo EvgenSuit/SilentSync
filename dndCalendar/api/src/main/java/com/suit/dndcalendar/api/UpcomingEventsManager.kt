@@ -10,6 +10,7 @@ interface UpcomingEventsManager {
 
     suspend fun setDndOffToggle(id: Long, endTime: Long)
     suspend fun removeDndOffToggle(id: Long)
+    suspend fun removeDndOffOverlappingToggle(id: Long)
 
     suspend fun removeUpcomingEvent(id: Long)
     fun upcomingEventsFlow(): Flow<List<UpcomingEventData>>

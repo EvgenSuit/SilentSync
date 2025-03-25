@@ -174,6 +174,18 @@ class CalendarChangeReceiverTests {
         assertEquals(event1.startTime, scheduledTimes[0])
         assertEquals(event2.startTime, scheduledTimes[1])
         assertEquals(event2.endTime, scheduledTimes[2])
+
+        val events = upcomingEventsDb.dao().getUpcomingEvents().first()
+        events[0].apply {
+            assertTrue(doesDndOffOverlap)
+            assertTrue(scheduleDndOn)
+            assertTrue(scheduleDndOff)
+        }
+        events[1].apply {
+            assertFalse(doesDndOffOverlap)
+            assertTrue(scheduleDndOn)
+            assertTrue(scheduleDndOff)
+        }
     }
     @Test
     fun eventOccurs_endTimeEqualsToAnotherNotMatchingEventsStartTime_dndOffScheduledForFirstEvent() = runTest {
@@ -193,7 +205,14 @@ class CalendarChangeReceiverTests {
         assertEquals(2, scheduledTimes.size)
         assertEquals(event1.startTime, scheduledTimes[0])
         assertEquals(event1.endTime, scheduledTimes[1])
+
+        upcomingEventsDb.dao().getUpcomingEvents().first()[0].apply {
+            assertFalse(doesDndOffOverlap)
+            assertTrue(scheduleDndOn)
+            assertTrue(scheduleDndOff)
+        }
     }
+
 
     @Test
     fun eventOccurs_eventsNotMatchingCriteriaPresent_eventsRemoved() = runTest {
@@ -293,7 +312,7 @@ class CalendarChangeReceiverTests {
     }
 
     @Test
-    fun eventOccurs_upcomingToggleNotPresent_defaultOptionsUsed() = runTest {
+    fun eventOccurs_upcomingEventNotPresent_defaultOptionsUsed() = runTest {
         insertEntity(DNDScheduleCalendarCriteriaEntity(likeNames = listOf("event")))
         TestHelpers.insertCalendarData(context, CalendarEventData(1L, "custom event", startTime, endTime))
 
@@ -305,7 +324,7 @@ class CalendarChangeReceiverTests {
         assertTrue(savedUpcomingEvent.scheduleDndOff)
     }
     @Test
-    fun eventOccurs_upcomingTogglePresent_doNotSchedule_savedOptionsUsed() = runTest {
+    fun eventOccurs_upcomingEventPresent_doNotSchedule_savedOptionsUsed() = runTest {
         insertEntity(DNDScheduleCalendarCriteriaEntity(likeNames = listOf("event")))
         TestHelpers.insertCalendarData(context, CalendarEventData(1L, "custom event", startTime, endTime))
 
