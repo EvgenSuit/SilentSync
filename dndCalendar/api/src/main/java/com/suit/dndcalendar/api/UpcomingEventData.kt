@@ -12,6 +12,8 @@ data class UpcomingEventData(
     val title: String,
     val startTime: Long,
     val endTime: Long,
+    // scheduleDndOn and scheduleDndOff represent user-defined options
     val scheduleDndOn: Boolean = true,
-    val scheduleDndOff: Boolean = true
+    val scheduleDndOff: Boolean = true,
+    val doesDndOffOverlap: Boolean = false
 )

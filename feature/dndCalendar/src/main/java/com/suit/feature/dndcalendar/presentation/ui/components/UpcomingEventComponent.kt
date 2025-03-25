@@ -19,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.suit.dndcalendar.api.UpcomingEventData
@@ -32,6 +33,7 @@ fun UpcomingEventComponent(
     onDndOffClick: (Long, Boolean) -> Unit,
     modifier: Modifier = Modifier
     ) {
+    print(event)
     ElevatedCard(
         modifier = modifier
             .fillMaxWidth()
@@ -45,6 +47,8 @@ fun UpcomingEventComponent(
                 .padding(5.dp)
         ) {
             Text(event.title,
+                maxLines = 5,
+                overflow = TextOverflow.Ellipsis,
                 style = MaterialTheme.typography.titleSmall)
 
             Row(
@@ -56,13 +60,16 @@ fun UpcomingEventComponent(
                     stringId = R.string.turn_dnd_on,
                     checked = event.scheduleDndOn,
                     onClick = { onDndOnClick(event.id, it) },
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    checkboxTestTag = "DND On: ${event.id}"
                 )
                 UpcomingEventCheckbox(
                     stringId = R.string.turn_dnd_off,
-                    checked = event.scheduleDndOff,
+                    enabled = !event.doesDndOffOverlap,
+                    checked = event.scheduleDndOff && !event.doesDndOffOverlap,
                     onClick = { onDndOffClick(event.id, it) },
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    checkboxTestTag = "DND Off: ${event.id}"
                 )
             }
         }
@@ -73,9 +80,12 @@ fun UpcomingEventComponent(
 private fun UpcomingEventCheckbox(
     @StringRes stringId: Int,
     checked: Boolean,
+    enabled: Boolean = true,
     onClick: (Boolean) -> Unit,
-    modifier: Modifier
+    modifier: Modifier,
+    checkboxTestTag: String
 ) {
+    print(checkboxTestTag)
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier
@@ -86,8 +96,10 @@ private fun UpcomingEventCheckbox(
             style = MaterialTheme.typography.labelSmall
         )
         Checkbox(
+            enabled = enabled,
             checked = checked,
             onCheckedChange = onClick,
+            modifier = Modifier.testTag(checkboxTestTag)
         )
     }
 }
@@ -99,7 +111,7 @@ fun UpcomingEventComponentPreview() {
         UpcomingEventComponent(
             event = UpcomingEventData(
                 id = 0,
-                title = "Some event",
+                title = "Some event".repeat(15),
                 startTime = 0,
                 endTime = 0
             ),
