@@ -63,6 +63,7 @@ android {
 dependencies {
 
     implementation(project(":feature:dndCalendar"))
+    implementation(project(":feature:dndLocation"))
     implementation(project(":playReview:impl"))
     implementation(project(":playReview:api"))
     implementation(project(":utility"))

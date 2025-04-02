@@ -7,23 +7,31 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.suit.feature.dndcalendar.presentation.ui.DNDCalendarScreen
+import com.suit.feature.dndlocation.presentation.ui.DNDLocationScreen
 import kotlinx.serialization.Serializable
 
-@Serializable
-object DNDCalendar
+sealed class Destination {
+    @Serializable
+    object DNDCalendar
 
+    @Serializable
+    object DNDLocation
+}
 @Composable
 fun SilentSyncNavHost(
     navController: NavHostController = rememberNavController(),
     modifier: Modifier
 ) {
     NavHost(
-        startDestination = DNDCalendar,
+        startDestination = Destination.DNDLocation,
         navController = navController,
         modifier = modifier
     ) {
-        composable<DNDCalendar> {
+        composable<Destination.DNDCalendar> {
             DNDCalendarScreen()
+        }
+        composable<Destination.DNDLocation> {
+            DNDLocationScreen()
         }
     }
 }
