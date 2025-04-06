@@ -2,6 +2,7 @@ package com.suit.silentsync
 
 import android.app.Application
 import com.suit.feature.dndcalendar.presentation.koin.dndCalendarFeatureModule
+import com.suit.feature.dndlocation.koin.dndLocationFeatureModule
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.startKoin
 
@@ -11,7 +12,7 @@ class SilentSyncApplication: Application() {
         super.onCreate()
         startKoin {
             androidContext(this@SilentSyncApplication)
-            modules(dndCalendarFeatureModule)
+            modules(dndCalendarFeatureModule, dndLocationFeatureModule)
         }
     }
 }

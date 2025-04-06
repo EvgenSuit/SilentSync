@@ -33,7 +33,6 @@ fun UpcomingEventComponent(
     onDndOffClick: (Long, Boolean) -> Unit,
     modifier: Modifier = Modifier
     ) {
-    print(event)
     ElevatedCard(
         modifier = modifier
             .fillMaxWidth()

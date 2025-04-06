@@ -29,4 +29,7 @@ include(":testUtil")
 include(":playReview:api")
 include(":playReview:impl")
 include(":feature:dndLocation")
+
 include(":dndLocation:impl")
+//include(":dndLocation:api")
+include(":dndLocation:api")

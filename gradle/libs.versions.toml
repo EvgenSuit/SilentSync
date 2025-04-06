@@ -36,6 +36,9 @@ coroutinesPlayServices = "1.10.1"
 playReview = "2.0.2"
 splashScreen = "1.0.1"
 playServicesLocation = "21.3.0"
+ktorBom = "3.1.2"
+buildConfig = "5.6.2"
+mapbox = "3.1.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -71,6 +74,12 @@ koin-compose-viewmodel = { module = "io.insert-koin:koin-compose-viewmodel", ver
 koin-coroutines = { module = "io.insert-koin:koin-core-coroutines", version.ref = "koinVersion" }
 koin-test = { module = "io.insert-koin:koin-test", version.ref = "koinVersion" }
 
+ktor-bom = { module = "io.ktor:ktor-bom", version.ref = "ktorBom" }
+ktor-client-core = { module = "io.ktor:ktor-client-core" }
+ktor-client-cio = { module = "io.ktor:ktor-client-cio" }
+ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation" }
+ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json" }
+
 mockk = { module = "io.mockk:mockk", version.ref = "mockkVersion" }
 
 androidx-sqlite = { module = "androidx.sqlite:sqlite", version.ref = "sqlite" }
@@ -89,6 +98,9 @@ androidx-ui-test-junit4-android = { group = "androidx.compose.ui", name = "ui-te
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
 gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
+
+mapbox-core = { module = "com.mapbox.mapboxsdk:mapbox-android-core", version.ref = "mapbox" }
+mapbox-turf = { module = "com.mapbox.mapboxsdk:mapbox-sdk-turf", version.ref = "mapbox" }
 
 firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebaseBom" }
 firebase-crashlytics = { module = "com.google.firebase:firebase-crashlytics" }
@@ -110,3 +122,4 @@ androidx-room = { id = "androidx.room", version.ref = "room" }
 ksp-plugin = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 google-services = { id = "com.google.gms.google-services", version.ref = "googleServices" }
 firebase-crashlytics = { id = "com.google.firebase.crashlytics", version.ref = "firebaseCrashlytics" }
+build-config = { id = "com.github.gmazzo.buildconfig", version.ref = "buildConfig" }
