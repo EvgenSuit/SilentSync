@@ -1,7 +1,7 @@
 package com.suit.feature.dndlocation.presentation.ui
 
 import com.suit.dndlocation.api.Feature
-import com.suit.feature.dndlocation.presentation.ui.components.RadiusValue
+import com.suit.dndlocation.api.RadiusValue
 
 sealed class DNDLocationIntent {
     data class LocationInput(val location: String): DNDLocationIntent()

@@ -71,6 +71,8 @@ internal class LocationService: Service(), KoinComponent {
 
                     println("Result: ${lastLocation.let { "Lat: ${it.latitude}, Long: ${it.longitude}" }}")
                     val savedLocations = savedLocationsDao.fetchLocations().first().map { location ->
+                        println("Saved location: ${location.let { "Lat: ${it.latitude}, Long: ${it.longitude}" }}")
+
                         val targetLatitude = location.latitude //51.08793 //51.0878733
                         val targetLongitude = location.longitude //17.011963 //17.0120722
                         val targetLocation = Location("").apply {
@@ -85,16 +87,27 @@ internal class LocationService: Service(), KoinComponent {
                     }.sortedBy { it.second }
 
                     savedLocations.forEach { (location, distanceInMeters) ->
-                        println("Distance: $distanceInMeters")
+                        println("Radius meters: ${location.radiusMeters}, Distance: $distanceInMeters")
 
                         if (distanceInMeters <= location.radiusMeters) {
                             println("Located withing the bounds")
 
-                            if (location.turnDNDOnUponEntering) println("Turning DND on")
+                            if (!location.didEnter) {
+                                // update status irrespectively of DND options since they're prone to change
+                                savedLocationsDao.updateZoneStatus(location.mapBoxId, true, false)
+                                if (location.turnDNDOnUponEntering) {
+                                    println("Turning DND on")
+                                }
+                            }
                             // turn dnd off and exit the loop after managing the closest location within the bounds,
                             // accounting for overlaps
                             return@launch
-                        } else println("Turning DND off")
+                        } else if (location.didEnter && !location.didExit) {
+                            savedLocationsDao.updateZoneStatus(location.mapBoxId, false, true)
+                            if (location.turnDNDOffUponExiting) {
+                                println("Turning DND off")
+                            }
+                        }
                     }
                 }
             }
@@ -102,7 +115,8 @@ internal class LocationService: Service(), KoinComponent {
         fusedLocationClient.requestLocationUpdates(
             LocationRequest.Builder(LOCATION_UPDATE_INTERVAL_MILLIS)
                 .setIntervalMillis(LOCATION_UPDATE_INTERVAL_MILLIS)
-                .setPriority(Priority.PRIORITY_BALANCED_POWER_ACCURACY)
+                // TODO change to balanced
+                .setPriority(Priority.PRIORITY_HIGH_ACCURACY)
                 .build(),
             locationCallback,
             Looper.getMainLooper())

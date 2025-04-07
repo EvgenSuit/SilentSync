@@ -33,7 +33,6 @@ internal class GeocodingManagerImpl(
                 parameters.append("access_token", BuildConfig.MAPBOX_ACCESS_TOKEN)
             }
         }.body<GeocodingResult?>()
-            println(request)
         return request!!
     }
 

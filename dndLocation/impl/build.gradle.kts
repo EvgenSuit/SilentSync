@@ -53,8 +53,6 @@ dependencies {
     implementation(libs.koin.android)
 
     implementation(libs.play.services.location)
-    implementation(libs.mapbox.core)
-    implementation(libs.mapbox.turf)
 
     ksp(libs.androidx.room.compiler)
     implementation(libs.androidx.room.runtime)

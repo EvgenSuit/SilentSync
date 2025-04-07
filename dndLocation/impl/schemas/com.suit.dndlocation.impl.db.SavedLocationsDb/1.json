@@ -1,0 +1,82 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 1,
+    "identityHash": "295917c3d4bcc0b599914b3ee40c9fdf",
+    "entities": [
+      {
+        "tableName": "SavedLocation",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`mapBoxId` TEXT NOT NULL, `fullAddress` TEXT NOT NULL, `longitude` REAL NOT NULL, `latitude` REAL NOT NULL, `radiusMeters` REAL NOT NULL, `turnDNDOnUponEntering` INTEGER NOT NULL, `turnDNDOffUponExiting` INTEGER NOT NULL, `didEnter` INTEGER NOT NULL, `didExit` INTEGER NOT NULL, PRIMARY KEY(`mapBoxId`))",
+        "fields": [
+          {
+            "fieldPath": "mapBoxId",
+            "columnName": "mapBoxId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fullAddress",
+            "columnName": "fullAddress",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "longitude",
+            "columnName": "longitude",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "latitude",
+            "columnName": "latitude",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "radiusMeters",
+            "columnName": "radiusMeters",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "turnDNDOnUponEntering",
+            "columnName": "turnDNDOnUponEntering",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "turnDNDOffUponExiting",
+            "columnName": "turnDNDOffUponExiting",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "didEnter",
+            "columnName": "didEnter",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "didExit",
+            "columnName": "didExit",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "mapBoxId"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      }
+    ],
+    "views": [],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '295917c3d4bcc0b599914b3ee40c9fdf')"
+    ]
+  }
+}

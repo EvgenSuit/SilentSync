@@ -26,6 +26,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -118,6 +119,9 @@ private fun RadiusOptions(
         if (locale == "US") RadiusMeasurement.Yards
         else RadiusMeasurement.Meters
     ) }
+    LaunchedEffect(Unit) {
+        onRadiusSelect(radiusInts[0], radiusMeasurement)
+    }
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(15.dp),

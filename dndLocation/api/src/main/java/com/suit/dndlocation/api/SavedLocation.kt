@@ -12,5 +12,8 @@ data class SavedLocation(
     val latitude: Double,
     val radiusMeters: Double,
     val turnDNDOnUponEntering: Boolean,
-    val turnDNDOffUponExiting: Boolean
+    val turnDNDOffUponExiting: Boolean,
+
+    val didEnter: Boolean = false,
+    val didExit: Boolean = false
 )

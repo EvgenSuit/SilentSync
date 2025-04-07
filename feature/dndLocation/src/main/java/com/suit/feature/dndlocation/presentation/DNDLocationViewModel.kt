@@ -43,7 +43,14 @@ class DNDLocationViewModel(
     private fun confirmLocation(feature: Feature, turnDNDOnUponEntering: Boolean,
                                 turnDNDOffUponExiting: Boolean,
                                 radiusValue: RadiusValue) {
-
+        viewModelScope.launch {
+            dndLocationRepository.confirmLocation(
+                feature,
+                turnDNDOnUponEntering,
+                turnDNDOffUponExiting,
+                radiusValue
+            )
+        }
     }
 
 }

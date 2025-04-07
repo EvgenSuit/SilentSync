@@ -128,8 +128,8 @@ fun DNDLocationScreenContent(
         LocationConfirmationDialog(
             feature = selectedFeature!!,
             onConfirm = { turnDNDOnUponEntering, turnDNDOffUponExiting, radiusValue ->
-                selectedFeature = null
                 onIntent(DNDLocationIntent.ConfirmLocation(selectedFeature!!, turnDNDOnUponEntering, turnDNDOffUponExiting, radiusValue))
+                selectedFeature = null
                         },
             onDismiss = { selectedFeature = null }
         )

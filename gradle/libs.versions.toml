@@ -38,7 +38,6 @@ splashScreen = "1.0.1"
 playServicesLocation = "21.3.0"
 ktorBom = "3.1.2"
 buildConfig = "5.6.2"
-mapbox = "3.1.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -98,9 +97,6 @@ androidx-ui-test-junit4-android = { group = "androidx.compose.ui", name = "ui-te
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
 gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
-
-mapbox-core = { module = "com.mapbox.mapboxsdk:mapbox-android-core", version.ref = "mapbox" }
-mapbox-turf = { module = "com.mapbox.mapboxsdk:mapbox-sdk-turf", version.ref = "mapbox" }
 
 firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebaseBom" }
 firebase-crashlytics = { module = "com.google.firebase:firebase-crashlytics" }
