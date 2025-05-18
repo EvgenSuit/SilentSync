@@ -5,7 +5,10 @@
     <string name="radius">Radius</string>
     <string name="meters">Meters</string>
     <string name="yards">Yards</string>
-    <string name="turn_dnd_on">Turn DND upon entering</string>
-    <string name="turn_dnd_off">Turn DND upon exiting</string>
+    <string name="turn_dnd_on_upon_entering">Turn DND on upon entering</string>
+    <string name="turn_dnd_off_upon_exiting">Turn DND off upon exiting</string>
     <string name="add_location">Add location</string>
+    <string name="update_location">Update location</string>
+
+    <string name="address">Address</string>
 </resources>

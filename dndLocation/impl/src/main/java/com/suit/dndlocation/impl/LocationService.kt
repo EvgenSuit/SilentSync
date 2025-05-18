@@ -54,6 +54,7 @@ internal class LocationService: Service(), KoinComponent {
     @RequiresPermission(allOf = [Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION])
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val savedLocationsDao = savedLocationsDb.savedLocationDao()
+        AppForegroundWatcher.startObserving()
 
         ServiceCompat.startForeground(
             this,
@@ -68,6 +69,7 @@ internal class LocationService: Service(), KoinComponent {
             override fun onLocationResult(locationResult: LocationResult) {
                 coroutineScope.launch {
                     val lastLocation = locationResult.lastLocation ?: return@launch
+                    CurrentLocation.updateLocation(lastLocation)
 
                     println("Result: ${lastLocation.let { "Lat: ${it.latitude}, Long: ${it.longitude}" }}")
                     val savedLocations = savedLocationsDao.fetchLocations().first().map { location ->
@@ -87,10 +89,10 @@ internal class LocationService: Service(), KoinComponent {
                     }.sortedBy { it.second }
 
                     savedLocations.forEach { (location, distanceInMeters) ->
-                        println("Radius meters: ${location.radiusMeters}, Distance: $distanceInMeters")
+                        println("Radius meters: ${location.radius}, Distance: $distanceInMeters")
 
-                        if (distanceInMeters <= location.radiusMeters) {
-                            println("Located withing the bounds")
+                        if (distanceInMeters <= location.radius) {
+                            println("Located within the bounds")
 
                             if (!location.didEnter) {
                                 // update status irrespectively of DND options since they're prone to change
@@ -112,24 +114,33 @@ internal class LocationService: Service(), KoinComponent {
                 }
             }
         }
-        fusedLocationClient.requestLocationUpdates(
-            LocationRequest.Builder(LOCATION_UPDATE_INTERVAL_MILLIS)
-                .setIntervalMillis(LOCATION_UPDATE_INTERVAL_MILLIS)
-                // TODO change to balanced
-                .setPriority(Priority.PRIORITY_HIGH_ACCURACY)
-                .build(),
-            locationCallback,
-            Looper.getMainLooper())
+
+        coroutineScope.launch {
+            AppForegroundWatcher.isInForeground.collect { isInForeground ->
+                fusedLocationClient.removeLocationUpdates(locationCallback)
+
+                val locationUpdateIntervalMillis = 2_000L
+                fusedLocationClient.requestLocationUpdates(
+                    LocationRequest.Builder(locationUpdateIntervalMillis)
+                        .setIntervalMillis(locationUpdateIntervalMillis)
+                        .setPriority(if (isInForeground) Priority.PRIORITY_HIGH_ACCURACY else Priority.PRIORITY_LOW_POWER)
+                        .build(),
+                    locationCallback,
+                    Looper.getMainLooper())
+            }
+        }
+
+
         return super.onStartCommand(intent, flags, startId)
     }
 
     private companion object {
         const val CHANNEL_ID = "04022025"
         const val CHANNEL_NAME = "CHANNEL NAME"
-        const val LOCATION_UPDATE_INTERVAL_MILLIS = 10_000L
     }
 
     override fun onDestroy() {
+        AppForegroundWatcher.stopObserving()
         fusedLocationClient.removeLocationUpdates(locationCallback)
         super.onDestroy()
     }

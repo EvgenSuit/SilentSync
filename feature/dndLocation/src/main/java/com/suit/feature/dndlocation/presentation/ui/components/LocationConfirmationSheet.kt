@@ -14,7 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Card
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ElevatedButton
@@ -22,9 +22,13 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.SheetState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.rememberStandardBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -38,12 +42,12 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
 import com.suit.dndlocation.api.Feature
 import com.suit.dndlocation.api.Geometry
 import com.suit.dndlocation.api.Properties
 import com.suit.dndlocation.api.RadiusMeasurement
 import com.suit.dndlocation.api.RadiusValue
+import com.suit.dndlocation.api.SavedLocation
 import com.suit.feature.dndlocation.R
 import com.suit.utility.ui.theme.SilentSyncTheme
 import java.util.Locale
@@ -51,50 +55,58 @@ import java.util.Locale
 typealias TurnDNDOnUponEntering = Boolean
 typealias TurnDNDOffUponExiting = Boolean
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LocationConfirmationDialog(
+fun LocationConfirmationSheet(
+    update: Boolean,
     feature: Feature,
+    sheetState: SheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+    savedLocation: SavedLocation? = null,
     onConfirm: (TurnDNDOnUponEntering, TurnDNDOffUponExiting, RadiusValue) -> Unit,
     onDismiss: () -> Unit
 ) {
-    var turnDNDOnUponEntering by rememberSaveable { mutableStateOf(true) }
-    var turnDNDOffUponExiting by rememberSaveable { mutableStateOf(true) }
+    var turnDNDOnUponEntering by rememberSaveable { mutableStateOf(savedLocation?.turnDNDOnUponEntering != false) }
+    var turnDNDOffUponExiting by rememberSaveable { mutableStateOf(savedLocation?.turnDNDOffUponExiting != false) }
     var isDropdownExpanded by remember { mutableStateOf(false) }
     var isMeasurementDropdownExpanded by remember { mutableStateOf(false) }
-    var radius by remember { mutableStateOf<RadiusValue?>(null) }
-    Dialog(
+    var radius by remember { mutableStateOf<RadiusValue?>(savedLocation?.let { location ->
+            RadiusValue(location.radius.toInt(), location.radiusMeasurement)
+    }) }
+    ModalBottomSheet(
         onDismissRequest = onDismiss,
+        sheetState = sheetState
     ) {
-        Card {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(35.dp),
-                modifier = Modifier
-                    .width(450.dp)
-                    .padding(20.dp)
-            ) {
-                Text(feature.properties.fullAddress,
-                    style = MaterialTheme.typography.titleSmall)
-                RadiusOptions(
-                    selectedRadiusValue = radius?.value,
-                    isValuesDropdownExpanded = isDropdownExpanded,
-                    isMeasurementDropdownExpanded = isMeasurementDropdownExpanded,
-                    onValuesDropdownExpandedChange = { isDropdownExpanded = it },
-                    onMeasurementDropdownExpandedChange = { isMeasurementDropdownExpanded = it },
-                    onRadiusSelect = { value, measurement -> radius = RadiusValue(value, measurement) },
-                )
-                DNDOptionsRow(
-                    turnDNDOnUponEntering = turnDNDOnUponEntering,
-                    turnDNDOffUponExiting = turnDNDOffUponExiting,
-                    onTurnDNDOnChange = { turnDNDOnUponEntering = it },
-                    onTurnDNDOffChange = { turnDNDOffUponExiting = it }
-                )
-                Box(Modifier.fillMaxWidth(),
-                    contentAlignment = Alignment.Center) {
-                    ElevatedButton(
-                        onClick = { onConfirm(turnDNDOnUponEntering, turnDNDOffUponExiting, radius!!) }
-                    ) {
-                        Text(stringResource(R.string.add_location))
-                    }
+        Column(
+            verticalArrangement = Arrangement.spacedBy(35.dp),
+            modifier = Modifier
+                .width(450.dp)
+                .padding(20.dp)
+        ) {
+            Text(feature.properties.fullAddress,
+                style = MaterialTheme.typography.titleSmall)
+            RadiusOptions(
+                selectedRadius = radius,
+                isValuesDropdownExpanded = isDropdownExpanded,
+                isMeasurementDropdownExpanded = isMeasurementDropdownExpanded,
+                onValuesDropdownExpandedChange = { isDropdownExpanded = it },
+                onMeasurementDropdownExpandedChange = { isMeasurementDropdownExpanded = it },
+                onRadiusSelect = { value, measurement -> radius = RadiusValue(value, measurement) },
+            )
+            DNDOptionsRow(
+                turnDNDOnUponEntering = turnDNDOnUponEntering,
+                turnDNDOffUponExiting = turnDNDOffUponExiting,
+                onTurnDNDOnChange = { turnDNDOnUponEntering = it },
+                onTurnDNDOffChange = { turnDNDOffUponExiting = it }
+            )
+            Box(Modifier.fillMaxWidth(),
+                contentAlignment = Alignment.Center) {
+                ElevatedButton(
+                    colors = ButtonDefaults.elevatedButtonColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    ),
+                    onClick = { onConfirm(turnDNDOnUponEntering, turnDNDOffUponExiting, radius!!) }
+                ) {
+                    Text(stringResource(if (update) R.string.update_location else R.string.add_location))
                 }
             }
         }
@@ -104,30 +116,26 @@ fun LocationConfirmationDialog(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun RadiusOptions(
-    selectedRadiusValue: Int?,
+    selectedRadius: RadiusValue?,
     isValuesDropdownExpanded: Boolean,
     isMeasurementDropdownExpanded: Boolean,
     onValuesDropdownExpandedChange: (Boolean) -> Unit,
     onMeasurementDropdownExpandedChange: (Boolean) -> Unit,
     onRadiusSelect: (Int, RadiusMeasurement) -> Unit
 ) {
-    val locale = Locale.getDefault().country
     val radiusInts = remember { generateSequence(10) { (it * 2).toInt() }
         .takeWhile { it <= 2000 }
         .toList() }
-    var radiusMeasurement by remember(locale) { mutableStateOf(
-        if (locale == "US") RadiusMeasurement.Yards
-        else RadiusMeasurement.Meters
-    ) }
+    val defaultMeasurement = getRadiusMeasurement()
+    val currMeasurement = selectedRadius?.measurement ?: defaultMeasurement
     LaunchedEffect(Unit) {
-        onRadiusSelect(radiusInts[0], radiusMeasurement)
+        if (selectedRadius == null) onRadiusSelect(radiusInts[0], defaultMeasurement)
     }
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(15.dp),
         modifier = Modifier.fillMaxWidth()
     ) {
-        Text(stringResource(R.string.radius))
         ExposedDropdownMenuBox(
             expanded = isValuesDropdownExpanded,
             onExpandedChange = { onValuesDropdownExpandedChange(it) },
@@ -138,7 +146,7 @@ private fun RadiusOptions(
                 .weight(1f),
         ) {
             TextField(
-                value = (selectedRadiusValue ?: radiusInts[0]).toString(),
+                value = (selectedRadius?.value ?: radiusInts[0]).toString(),
                 onValueChange = {},
                 readOnly = true,
                 modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable, true)
@@ -157,7 +165,7 @@ private fun RadiusOptions(
                             text = { Text(radius.toString()) },
                             onClick = {
                                 onValuesDropdownExpandedChange(false)
-                                onRadiusSelect(radius, radiusMeasurement) }
+                                onRadiusSelect(radius, currMeasurement) }
                         )
                     }
                 }
@@ -173,7 +181,7 @@ private fun RadiusOptions(
                 .weight(1f),
         ) {
             TextField(
-                value = radiusMeasurement.toString(),
+                value = currMeasurement.toString(),
                 onValueChange = {},
                 readOnly = true,
                 modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable, true)
@@ -187,12 +195,18 @@ private fun RadiusOptions(
                         text = { Text(measurement.toString()) },
                         onClick = {
                             onMeasurementDropdownExpandedChange(false)
-                            radiusMeasurement = measurement }
+                            onRadiusSelect(selectedRadius?.value ?: radiusInts[0], measurement)
+                        }
                     )
                 }
             }
         }
     }
+}
+
+private fun getRadiusMeasurement(): RadiusMeasurement {
+    val locale = Locale.getDefault().country
+    return if (locale == "US") RadiusMeasurement.Yards else RadiusMeasurement.Meters
 }
 
 @Composable
@@ -205,14 +219,15 @@ private fun DNDOptionsRow(
     Row(
         modifier = Modifier.fillMaxWidth()
     ) {
+        println("DNDOption: ${stringResource(R.string.turn_dnd_on_upon_entering)}")
         DNDOption(
-            id = R.string.turn_dnd_on,
+            id = R.string.turn_dnd_on_upon_entering,
             checked = turnDNDOnUponEntering,
             onCheck = onTurnDNDOnChange,
             modifier = Modifier.testTag("DND ON")
         )
         DNDOption(
-            id = R.string.turn_dnd_off,
+            id = R.string.turn_dnd_off_upon_exiting,
             checked = turnDNDOffUponExiting,
             onCheck = onTurnDNDOffChange,
             modifier = Modifier.testTag("DND OFF")
@@ -227,6 +242,7 @@ private fun RowScope.DNDOption(
     onCheck: (Boolean) -> Unit,
     modifier: Modifier
 ) {
+
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier
@@ -249,7 +265,7 @@ private fun RadiusOptionsPreview() {
         Surface {
             Box(Modifier.fillMaxSize()) {
                 RadiusOptions(
-                    selectedRadiusValue = null,
+                    selectedRadius = RadiusValue(100, RadiusMeasurement.Meters),
                     isValuesDropdownExpanded = true,
                     isMeasurementDropdownExpanded = false,
                     onRadiusSelect = {_, _ -> },
@@ -261,12 +277,15 @@ private fun RadiusOptionsPreview() {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Preview
 @Composable
 fun LocationConfirmationDialogPreview() {
     SilentSyncTheme {
         Surface {
-            LocationConfirmationDialog(
+            LocationConfirmationSheet(
+                update = false,
+                sheetState = rememberStandardBottomSheetState(),
                 feature = Feature(
                     geometry = Geometry(
                         coordinates = listOf()

@@ -1,6 +1,7 @@
 package com.suit.dndlocation.impl.db
 
 import androidx.room.Dao
+import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy.Companion.REPLACE
 import androidx.room.Query
@@ -11,6 +12,9 @@ import kotlinx.coroutines.flow.Flow
 interface SavedLocationsDAO {
     @Insert(onConflict = REPLACE)
     suspend fun insertLocation(savedLocation: SavedLocation)
+
+    @Query("DELETE FROM SavedLocation")
+    suspend fun deleteLocations()
 
     @Query("SELECT * FROM SavedLocation")
     fun fetchLocations(): Flow<List<SavedLocation>>

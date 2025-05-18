@@ -10,12 +10,18 @@ import com.suit.dndlocation.api.RadiusMeasurement
 import com.suit.dndlocation.api.RadiusValue
 import com.suit.dndlocation.api.SavedLocation
 import com.suit.dndlocation.impl.db.SavedLocationsDb
+import kotlinx.coroutines.flow.Flow
 
 internal class DNDLocationRepositoryImpl(
     private val context: Context,
     private val savedLocationsDb: SavedLocationsDb,
     private val geocodingManager: GeocodingManager
 ): DNDLocationRepository {
+    override fun savedLocationsFlow(): Flow<List<SavedLocation>> {
+       // runBlocking { savedLocationsDb.savedLocationDao().deleteLocations() }
+        return savedLocationsDb.savedLocationDao().fetchLocations()
+    }
+
     override suspend fun geocode(locationName: String): GeocodingResult {
         return geocodingManager.geocode(locationName)
     }
@@ -31,7 +37,8 @@ internal class DNDLocationRepositoryImpl(
                 fullAddress = properties.fullAddress,
                 longitude = coordinates[0],
                 latitude = coordinates[1],
-                radiusMeters = convertRadiusToMeters(radiusValue),
+                radius = radiusValue.value.toDouble(),
+                radiusMeasurement = radiusValue.measurement,
                 turnDNDOnUponEntering = turnDNDOnUponEntering,
                 turnDNDOffUponExiting = turnDNDOffUponExiting
             )
@@ -39,15 +46,9 @@ internal class DNDLocationRepositoryImpl(
        startLocationService()
     }
 
-    private fun startLocationService() {
+    override fun startLocationService() {
         val locationServiceIntent = Intent(context, LocationService::class.java)
         context.stopService(locationServiceIntent);
         context.startForegroundService(locationServiceIntent)
     }
-
-    private fun convertRadiusToMeters(radiusValue: RadiusValue): Double =
-        when (radiusValue.measurement) {
-            RadiusMeasurement.Yards -> radiusValue.value * 0.9144
-            RadiusMeasurement.Meters -> radiusValue.value.toDouble()
-        }
 }

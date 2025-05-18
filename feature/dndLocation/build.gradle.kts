@@ -1,7 +1,13 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.android)
+}
+
+val localProperties = Properties().apply {
+    load(rootProject.file("local.properties").inputStream())
 }
 
 android {
@@ -13,6 +19,8 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles("consumer-rules.pro")
+
+        manifestPlaceholders["MAP_SDK_KEY"] = localProperties["MAP_SDK_KEY"] as String
     }
 
     buildTypes {
@@ -45,6 +53,7 @@ dependencies {
     implementation(libs.koin.compose.viewmodel)
 
     implementation(libs.accompanist.permissions)
+    implementation(libs.maps.compose)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

@@ -10,7 +10,8 @@ data class SavedLocation(
     val fullAddress: String,
     val longitude: Double,
     val latitude: Double,
-    val radiusMeters: Double,
+    val radius: Double,
+    val radiusMeasurement: RadiusMeasurement,
     val turnDNDOnUponEntering: Boolean,
     val turnDNDOffUponExiting: Boolean,
 

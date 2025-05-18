@@ -1,15 +1,27 @@
 package com.suit.feature.dndlocation.presentation
 
+import android.location.Location
+import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.suit.dndlocation.api.DNDLocationRepository
 import com.suit.dndlocation.api.Feature
 import com.suit.dndlocation.api.GeocodingResult
 import com.suit.dndlocation.api.RadiusValue
+import com.suit.dndlocation.impl.CurrentLocation
 import com.suit.feature.dndlocation.presentation.ui.DNDLocationIntent
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.forEach
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.toCollection
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -18,6 +30,38 @@ class DNDLocationViewModel(
 ): ViewModel() {
     private val _uiState = MutableStateFlow(DNDLocationUIState())
     val uiState = _uiState.asStateFlow()
+
+    val locationFlow = /*flow<Location?> {
+            emit(Location("").apply {
+                latitude = 51.08793
+                longitude = 17.011963
+            })
+            delay(2000)
+            emit(Location("").apply {
+                latitude = 51.08735
+                longitude = 17.011945
+            })
+            delay(2000)
+            emit(Location("").apply {
+                latitude = 51.08709
+                longitude = 17.011937
+            })
+            delay(2000)
+            emit(Location("").apply {
+                latitude = 51.08650
+                longitude = 17.011919
+            })
+        }*/
+        CurrentLocation.location
+        .onEach { println(it) }
+        .onStart { dndLocationRepository.startLocationService() }
+        .stateIn(viewModelScope, SharingStarted.Lazily, null)
+    val savedLocations = dndLocationRepository.savedLocationsFlow()
+        .map { locations ->
+            // render locations with higher radius first
+            locations.sortedByDescending { it.radius }
+        }
+        .stateIn(viewModelScope, SharingStarted.Lazily, null)
 
     fun handleIntent(intent: DNDLocationIntent) {
         when (intent) {
