@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="location">Location</string>
+    <string name="app_name">SilentSync</string>
 
     <string name="radius">Radius</string>
     <string name="meters">Meters</string>
@@ -9,6 +10,9 @@
     <string name="turn_dnd_off_upon_exiting">Turn DND off upon exiting</string>
     <string name="add_location">Add location</string>
     <string name="update_location">Update location</string>
+
+    <string name="location_permission">We need your permission to access your location in order to provide this feature.</string>
+    <string name="background_location_permission">Allowing background location access lets the app track your location even when it is not open. This is needed to keep location updates running in the background.</string>
 
     <string name="address">Address</string>
 </resources>

@@ -20,6 +20,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -36,6 +37,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.suit.dndlocation.api.Feature
@@ -58,6 +61,12 @@ fun DNDLocationScreen(
         val uiState by viewModel.uiState.collectAsStateWithLifecycle()
         val currLocation by viewModel.locationFlow.collectAsState()
         val savedLocations by viewModel.savedLocations.collectAsState()
+        LifecycleEventEffect(Lifecycle.Event.ON_START) {
+            viewModel.handleIntent(DNDLocationIntent.StartService(true))
+        }
+        LifecycleEventEffect(Lifecycle.Event.ON_STOP) {
+            viewModel.handleIntent(DNDLocationIntent.StartService(false))
+        }
         DNDLocationScreenContent(
             currLocation = currLocation,
             savedLocations = savedLocations,
@@ -84,7 +93,7 @@ fun DNDLocationScreenContent(
 
     var selectedFeature by remember { mutableStateOf<Feature?>(null) }
     Box(
-        modifier = Modifier.padding(10.dp)
+        modifier = Modifier.padding(top = 10.dp)
             .pointerInput(Unit) {
                 awaitEachGesture {
                     if (!resultsColumnRect.contains(awaitFirstDown().position)) showResultColumn = false

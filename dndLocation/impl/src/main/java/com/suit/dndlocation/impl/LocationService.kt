@@ -19,6 +19,7 @@ import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
+import com.suit.dndlocation.api.SavedLocation
 import com.suit.dndlocation.impl.db.SavedLocationsDb
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.first
@@ -31,7 +32,13 @@ internal class LocationService: Service(), KoinComponent {
     private lateinit var locationCallback: LocationCallback
     private val savedLocationsDb by inject<SavedLocationsDb>()
     private val coroutineScope by inject<CoroutineScope>()
+    private lateinit var notificationManager: NotificationManager
 
+    @RequiresPermission(allOf = [Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION])
+    override fun onCreate() {
+        super.onCreate()
+        notificationManager = getSystemService(NotificationManager::class.java)
+    }
     override fun onBind(intent: Intent?) = null
 
     private fun buildChannel() {
@@ -40,21 +47,27 @@ internal class LocationService: Service(), KoinComponent {
                 NotificationChannel(
                     CHANNEL_ID,
                     CHANNEL_NAME,
-                    NotificationManager.IMPORTANCE_NONE
+                    NotificationManager.IMPORTANCE_MIN
                 )
             )
+
     }
 
     private fun buildNotification(): Notification {
         buildChannel()
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .build();
+            .build()
+    }
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        val highAccuracyMode = intent?.getBooleanExtra("HIGH_ACCURACY_MODE", false) ?: false
+        handleZones(highAccuracyMode)
+        return START_STICKY
     }
 
     @RequiresPermission(allOf = [Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION])
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+    private fun handleZones(highAccuracyMode: Boolean) {
         val savedLocationsDao = savedLocationsDb.savedLocationDao()
-        AppForegroundWatcher.startObserving()
 
         ServiceCompat.startForeground(
             this,
@@ -67,71 +80,67 @@ internal class LocationService: Service(), KoinComponent {
         locationCallback = object: LocationCallback() {
             @RequiresPermission(Manifest.permission.ACCESS_FINE_LOCATION)
             override fun onLocationResult(locationResult: LocationResult) {
+                val currentLocation = locationResult.lastLocation ?: return
+                CurrentLocation.updateLocation(currentLocation)
+
                 coroutineScope.launch {
-                    val lastLocation = locationResult.lastLocation ?: return@launch
-                    CurrentLocation.updateLocation(lastLocation)
+                    println("Current location: ${currentLocation.let { "Lat: ${it.latitude}, Long: ${it.longitude}" }}")
 
-                    println("Result: ${lastLocation.let { "Lat: ${it.latitude}, Long: ${it.longitude}" }}")
-                    val savedLocations = savedLocationsDao.fetchLocations().first().map { location ->
-                        println("Saved location: ${location.let { "Lat: ${it.latitude}, Long: ${it.longitude}" }}")
+                    val savedLocations = savedLocationsDao.fetchLocations().first()
+                    var closestInsideLocation: Pair<SavedLocation, Float>? = null
+                    var minDistanceInside = Float.MAX_VALUE
+                    var closestOutsideLocation: Pair<SavedLocation, Float>? = null
+                    var minDistanceOutside = Float.MAX_VALUE
 
-                        val targetLatitude = location.latitude //51.08793 //51.0878733
-                        val targetLongitude = location.longitude //17.011963 //17.0120722
+                    for (savedLocation in savedLocations) {
                         val targetLocation = Location("").apply {
-                            latitude = location.latitude
-                            longitude = location.longitude
+                            latitude = savedLocation.latitude
+                            longitude = savedLocation.longitude
                         }
-
-                        // if location is within a specified radius, add it to a list
-                        // then select the lowest distance and toggle dnd for that one
-                        val distanceInMeters = lastLocation.distanceTo(targetLocation)
-                        location to distanceInMeters
-                    }.sortedBy { it.second }
-
-                    savedLocations.forEach { (location, distanceInMeters) ->
-                        println("Radius meters: ${location.radius}, Distance: $distanceInMeters")
-
-                        if (distanceInMeters <= location.radius) {
-                            println("Located within the bounds")
-
-                            if (!location.didEnter) {
-                                // update status irrespectively of DND options since they're prone to change
-                                savedLocationsDao.updateZoneStatus(location.mapBoxId, true, false)
-                                if (location.turnDNDOnUponEntering) {
-                                    println("Turning DND on")
+                        val distanceInMeters = currentLocation.distanceTo(targetLocation)
+                        if (distanceInMeters <= savedLocation.radius) {
+                            if (!savedLocation.didEnter) {
+                                if (distanceInMeters < minDistanceInside) {
+                                    closestInsideLocation = savedLocation to distanceInMeters
+                                    minDistanceInside = distanceInMeters
                                 }
                             }
-                            // turn dnd off and exit the loop after managing the closest location within the bounds,
-                            // accounting for overlaps
-                            return@launch
-                        } else if (location.didEnter && !location.didExit) {
-                            savedLocationsDao.updateZoneStatus(location.mapBoxId, false, true)
-                            if (location.turnDNDOffUponExiting) {
-                                println("Turning DND off")
+                        } else if (savedLocation.didEnter && !savedLocation.didExit) {
+                            if (distanceInMeters < minDistanceOutside) {
+                                closestOutsideLocation = savedLocation to distanceInMeters
+                                minDistanceOutside = distanceInMeters
                             }
+                        }
+                    }
+                    closestInsideLocation?.let { (location, _) ->
+                        if (location.turnDNDOnUponEntering) {
+                            notificationManager.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_PRIORITY)
+                        }
+                        savedLocationsDao.updateZoneStatus(location.mapBoxId, true, false)
+                        println("Turning DND on")
+                    }
+                    // After checking all locations, handle the closest exited location if no new entry occurred
+                    if (closestInsideLocation == null) {
+                        closestOutsideLocation?.let { (location, _) ->
+                            if (location.turnDNDOffUponExiting) {
+                                notificationManager.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_ALL)
+                            }
+                            savedLocationsDao.updateZoneStatus(location.mapBoxId, false, true)
                         }
                     }
                 }
             }
         }
 
-        coroutineScope.launch {
-            AppForegroundWatcher.isInForeground.collect { isInForeground ->
-                fusedLocationClient.removeLocationUpdates(locationCallback)
-
-                val locationUpdateIntervalMillis = 2_000L
-                fusedLocationClient.requestLocationUpdates(
-                    LocationRequest.Builder(locationUpdateIntervalMillis)
-                        .setIntervalMillis(locationUpdateIntervalMillis)
-                        .setPriority(if (isInForeground) Priority.PRIORITY_HIGH_ACCURACY else Priority.PRIORITY_LOW_POWER)
-                        .build(),
-                    locationCallback,
-                    Looper.getMainLooper())
-            }
-        }
-
-
-        return super.onStartCommand(intent, flags, startId)
+        fusedLocationClient.removeLocationUpdates(locationCallback)
+        val locationUpdateIntervalMillis = if (highAccuracyMode) 2_000L else 30_000L
+        fusedLocationClient.requestLocationUpdates(
+            LocationRequest.Builder(locationUpdateIntervalMillis)
+                .setIntervalMillis(locationUpdateIntervalMillis)
+                .setPriority(if (highAccuracyMode) Priority.PRIORITY_HIGH_ACCURACY else Priority.PRIORITY_LOW_POWER)
+                .build(),
+            locationCallback,
+            Looper.getMainLooper())
     }
 
     private companion object {
@@ -140,7 +149,6 @@ internal class LocationService: Service(), KoinComponent {
     }
 
     override fun onDestroy() {
-        AppForegroundWatcher.stopObserving()
         fusedLocationClient.removeLocationUpdates(locationCallback)
         super.onDestroy()
     }

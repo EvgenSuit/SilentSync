@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.forEach
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
@@ -43,18 +44,22 @@ class DNDLocationViewModel(
             })
             delay(2000)
             emit(Location("").apply {
-                latitude = 51.08709
-                longitude = 17.011937
+                latitude = 51.08773
+                longitude = 17.011963
             })
             delay(2000)
             emit(Location("").apply {
                 latitude = 51.08650
                 longitude = 17.011919
             })
+            delay(2000)
+            emit(Location("").apply {
+                latitude = 51.08793
+                longitude = 17.011963
+            })
         }*/
         CurrentLocation.location
-        .onEach { println(it) }
-        .onStart { dndLocationRepository.startLocationService() }
+
         .stateIn(viewModelScope, SharingStarted.Lazily, null)
     val savedLocations = dndLocationRepository.savedLocationsFlow()
         .map { locations ->
@@ -65,6 +70,7 @@ class DNDLocationViewModel(
 
     fun handleIntent(intent: DNDLocationIntent) {
         when (intent) {
+            is DNDLocationIntent.StartService -> dndLocationRepository.startLocationService(highAccuracyMode = intent.highAccuracyMode)
             is DNDLocationIntent.LocationInput -> onLocationInput(intent.location)
             is DNDLocationIntent.ConfirmLocation -> confirmLocation(
                 intent.feature, intent.turnDNDOnUponEntering, intent.turnDNDOffUponExiting, intent.radiusValue

@@ -31,7 +31,7 @@ class RadiusMeasurementConverter {
 interface DNDLocationRepository {
     fun savedLocationsFlow(): Flow<List<SavedLocation>>
     suspend fun geocode(locationName: String): GeocodingResult
-    fun startLocationService()
+    fun startLocationService(highAccuracyMode: Boolean)
     suspend fun confirmLocation(feature: Feature, turnDNDOnUponEntering: Boolean,
                                 turnDNDOffUponExiting: Boolean,
                                 radiusValue: RadiusValue)

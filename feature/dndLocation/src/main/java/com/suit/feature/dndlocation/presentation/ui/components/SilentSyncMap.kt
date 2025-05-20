@@ -2,29 +2,24 @@ package com.suit.feature.dndlocation.presentation.ui.components
 
 import android.animation.ValueAnimator
 import android.location.Location
-import androidx.annotation.StringRes
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.SheetState
-import androidx.compose.material3.SheetValue
-import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
-import androidx.compose.material3.rememberStandardBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -35,8 +30,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.unit.dp
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.CameraPosition
@@ -53,9 +47,15 @@ import com.suit.dndlocation.api.Geometry
 import com.suit.dndlocation.api.RadiusMeasurement
 import com.suit.dndlocation.api.RadiusValue
 import com.suit.dndlocation.api.SavedLocation
-import com.suit.feature.dndlocation.R
 import kotlinx.coroutines.launch
+import java.util.UUID
 import kotlin.math.pow
+
+fun isUserInZone(userLocation: Location, zoneLatLng: LatLng, radiusMeters: Double): Boolean =
+    userLocation.distanceTo(Location("").apply {
+        latitude = zoneLatLng.latitude
+        longitude = zoneLatLng.longitude
+    }) <= radiusMeters
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -89,6 +89,7 @@ fun SilentSyncMap(currLocation: Location?,
     }
 
     val zoom = 17f
+    val animDuration = 220
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(
             LatLng(currLocation.latitude, currLocation.longitude),
@@ -98,31 +99,71 @@ fun SilentSyncMap(currLocation: Location?,
     var detailsIndex by rememberSaveable {
         mutableStateOf(-1)
     }
+    val userInsideZoneIndex = remember(savedLocations, currLocation) {
+        savedLocations?.mapIndexedNotNull { index, location ->
+            val radiusMeters = when (location.radiusMeasurement) {
+                RadiusMeasurement.Meters -> location.radius
+                RadiusMeasurement.Yards -> location.radius * 0.9144
+            }
+            val zoneLatLng = LatLng(location.latitude, location.longitude)
+            if (isUserInZone(currLocation, zoneLatLng, radiusMeters)) index to radiusMeters else null
+        }
+            ?.minByOrNull { it.second } // Select smallest radius among matching zones
+            ?.first
+    }
+    var mapLoaded by remember { mutableStateOf(false) }
+    val mapAlpha by animateFloatAsState(
+        targetValue = if (mapLoaded) 1f else 0f,
+        animationSpec = tween(durationMillis = 400),
+        label = "mapAlpha"
+    )
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
         GoogleMap(
             cameraPositionState = cameraPositionState,
+            onMapLoaded = { mapLoaded = true },
             mapColorScheme = if (isSystemInDarkTheme()) ComposeMapColorScheme.DARK else ComposeMapColorScheme.LIGHT,
             uiSettings = MapUiSettings(
                 zoomControlsEnabled = false,
                 compassEnabled = false,
                 myLocationButtonEnabled = false,
                 mapToolbarEnabled = false
-            )
+            ),
+            modifier = Modifier.fillMaxSize().alpha(mapAlpha)
         ) {
             savedLocations?.forEachIndexed { i, targetLocation ->
+                val isUserInside = userInsideZoneIndex == i
+
                 val isSelected = detailsIndex == i
-                val targetAlpha = if (isSelected) 0.8f else 0.4f
+                val targetAlpha = when {
+                    isSelected -> 0.3f
+                    isUserInside -> 0.8f
+                    else -> 0.4f
+                }
                 val animatedAlpha by animateFloatAsState(
                     targetValue = targetAlpha,
-                    animationSpec = tween(220)
+                    animationSpec = tween(animDuration)
                 )
 
-                val targetStrokeColor = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.background
+                val targetStrokeColor = when {
+                    isSelected -> MaterialTheme.colorScheme.onPrimaryContainer
+                    isUserInside -> MaterialTheme.colorScheme.primaryContainer
+                    else -> MaterialTheme.colorScheme.background
+                }
                 val animatedStrokeColor by animateColorAsState(
                     targetValue = targetStrokeColor,
-                    animationSpec = tween(220)
+                    animationSpec = tween(animDuration)
+                )
+
+                val targetStrokeWidth = when {
+                    isSelected -> 2f
+                    isUserInside -> 12f
+                    else -> 8f
+                }
+                val animatedStrokeWidth by animateFloatAsState(
+                    targetValue = targetStrokeWidth,
+                    animationSpec = tween(animDuration)
                 )
                 AdvancedMarker(
                     state = MarkerState(position = LatLng(targetLocation.latitude, targetLocation.longitude)),
@@ -139,6 +180,7 @@ fun SilentSyncMap(currLocation: Location?,
                         RadiusMeasurement.Meters -> targetLocation.radius
                         RadiusMeasurement.Yards -> targetLocation.radius * 1.09361
                     },
+                    strokeWidth = animatedStrokeWidth,
                     clickable = true,
                     onClick = {
                         detailsIndex = i
@@ -168,6 +210,15 @@ fun SilentSyncMap(currLocation: Location?,
                     modifier = Modifier.padding(6.dp))
             }
         }
+        AnimatedVisibility(!mapLoaded,
+            enter = fadeIn(),
+            exit = fadeOut()
+        ) {
+            Box(modifier = Modifier.fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)) {
+                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+            }
+        }
     }
     if (detailsIndex != -1 && savedLocations != null) {
         val selectedLocation = savedLocations[detailsIndex]
@@ -186,69 +237,4 @@ fun SilentSyncMap(currLocation: Location?,
             onDismiss = { detailsIndex = -1 }
         )
     }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun LocationDetailsSheet(
-    savedLocation: SavedLocation,
-    sheetState: SheetState = rememberModalBottomSheetState(),
-    onDismiss: () -> Unit
-) {
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = sheetState
-    ) {
-        Column(
-            verticalArrangement = Arrangement.spacedBy(15.dp),
-            modifier = Modifier.fillMaxSize()
-                .padding(10.dp)
-        ) {
-            LocationDetailSection(
-                section = R.string.address,
-                value = savedLocation.fullAddress
-            )
-            LocationDetailSection(
-                section = R.string.radius,
-                value = savedLocation.radius.toString()
-            )
-        }
-    }
-}
-
-@Composable
-fun LocationDetailSection(
-    @StringRes section: Int,
-    value: String
-) {
-    Column(
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Text(stringResource(section),
-            style = MaterialTheme.typography.labelSmall.copy(
-                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
-            ))
-        Text(value)
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Preview
-@Composable
-fun LocationDetailsSheetPreview() {
-    LocationDetailsSheet(
-        savedLocation = SavedLocation(
-            latitude = 51.1,
-            longitude = 17.4,
-            radius = 100.0,
-            radiusMeasurement = com.suit.dndlocation.api.RadiusMeasurement.Meters,
-            turnDNDOnUponEntering = true,
-            turnDNDOffUponExiting = true,
-            didEnter = false,
-            didExit = false,
-            mapBoxId = "",
-            fullAddress = "Wrocław, Lower Silesian Voivodeship, Poland"
-        ),
-        sheetState = rememberStandardBottomSheetState(initialValue = SheetValue.PartiallyExpanded),
-        onDismiss = {} )
 }

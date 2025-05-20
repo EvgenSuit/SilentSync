@@ -20,18 +20,22 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
 import com.google.android.gms.time.TrustedTime
 import com.google.android.play.core.ktx.launchReview
 import com.google.android.play.core.ktx.requestReview
 import com.google.android.play.core.review.ReviewManagerFactory
 import com.suit.playreview.impl.PlayReviewManagerImpl
 import com.suit.playreview.impl.playReviewDatastore
+import com.suit.silentsync.navigation.BottomBar
 import com.suit.silentsync.navigation.SilentSyncNavHost
 import com.suit.utility.analytics.SilentSyncAnalytics
 import com.suit.utility.ui.CustomSnackbar
@@ -79,6 +83,8 @@ class MainActivity : ComponentActivity() {
                 ))
             }
             val focusManager = LocalFocusManager.current
+            val navController = rememberNavController()
+            val currEntry by navController.currentBackStackEntryAsState()
             SilentSyncTheme {
                 Scaffold(
                     snackbarHost = {
@@ -86,6 +92,20 @@ class MainActivity : ComponentActivity() {
                             CustomSnackbar(message = snackbarHostState.currentSnackbarData?.visuals?.message,
                                 onDismiss = snackbarController::dismiss)
                         }
+                    },
+                    bottomBar = {
+                        BottomBar(
+                            currentEntry = currEntry,
+                            onNavigate = {
+                                navController.navigate(it) {
+                                    popUpTo(navController.graph.id) {
+                                        saveState = true
+                                    }
+                                    restoreState = true
+                                    launchSingleTop = true
+                                }
+                            }
+                        )
                     },
                     modifier = Modifier.fillMaxSize()
                         .pointerInput(Unit) {
@@ -97,6 +117,7 @@ class MainActivity : ComponentActivity() {
                         }) { innerPadding ->
                     CompositionLocalProvider(LocalSnackbarController provides snackbarController) {
                         SilentSyncNavHost(
+                            navController = navController,
                             modifier = Modifier
                                 .padding(innerPadding)
                                 // prevent padding above keyword applied by innerPadding

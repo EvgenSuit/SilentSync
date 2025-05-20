@@ -43,12 +43,14 @@ internal class DNDLocationRepositoryImpl(
                 turnDNDOffUponExiting = turnDNDOffUponExiting
             )
         )
-       startLocationService()
+
     }
 
-    override fun startLocationService() {
-        val locationServiceIntent = Intent(context, LocationService::class.java)
-        context.stopService(locationServiceIntent);
+    override fun startLocationService(highAccuracyMode: Boolean) {
+        val locationServiceIntent = Intent(context, LocationService::class.java).apply {
+            putExtra("HIGH_ACCURACY_MODE", highAccuracyMode)
+        }
+        context.stopService(locationServiceIntent)
         context.startForegroundService(locationServiceIntent)
     }
 }

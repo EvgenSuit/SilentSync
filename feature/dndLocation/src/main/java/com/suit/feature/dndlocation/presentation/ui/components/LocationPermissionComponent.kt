@@ -4,10 +4,13 @@ import android.Manifest
 import android.os.Build
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
-import com.google.accompanist.permissions.PermissionStatus
+import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import com.google.accompanist.permissions.rememberPermissionState
+import com.google.accompanist.permissions.shouldShowRationale
+import com.suit.feature.dndlocation.R
 import com.suit.utility.ui.PermissionDialog
 import com.suit.utility.ui.navigateToSettings
 
@@ -17,29 +20,33 @@ fun LocationPermissionComponent(
     onGranted: @Composable () -> Unit
 ) {
     val context = LocalContext.current
-    val permissionsState = rememberMultiplePermissionsState(listOf(
-        Manifest.permission.ACCESS_COARSE_LOCATION,
-        Manifest.permission.ACCESS_FINE_LOCATION
-    ))
+    val permissionsState = rememberMultiplePermissionsState(
+        listOfNotNull(
+            Manifest.permission.ACCESS_COARSE_LOCATION,
+            Manifest.permission.ACCESS_FINE_LOCATION
+        )
+    )
     if (!permissionsState.allPermissionsGranted) {
         PermissionDialog(
-            text = "Access to location is required",
+            text = stringResource(R.string.location_permission),
             onAccept = {
                 if (permissionsState.shouldShowRationale) context.navigateToSettings()
-                else permissionsState.launchMultiplePermissionRequest();
+                else permissionsState.launchMultiplePermissionRequest()
             },
             onDismiss = {}
         )
     } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
         val backgroundLocationPermissionState = rememberPermissionState(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
-        if (backgroundLocationPermissionState.status != PermissionStatus.Granted) {
+        if (!backgroundLocationPermissionState.status.isGranted) {
             PermissionDialog(
-                text = "Access to background location is required",
+                text = stringResource(R.string.background_location_permission),
                 onAccept = {
-                    backgroundLocationPermissionState.launchPermissionRequest();
+                    if (backgroundLocationPermissionState.status.shouldShowRationale || !backgroundLocationPermissionState.status.isGranted) context.navigateToSettings()
+                    else backgroundLocationPermissionState.launchPermissionRequest()
                 },
                 onDismiss = {}
             )
         } else onGranted()
-    } else onGranted()
+    }
+    else onGranted()
 }

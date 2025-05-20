@@ -123,9 +123,7 @@ private fun RadiusOptions(
     onMeasurementDropdownExpandedChange: (Boolean) -> Unit,
     onRadiusSelect: (Int, RadiusMeasurement) -> Unit
 ) {
-    val radiusInts = remember { generateSequence(10) { (it * 2).toInt() }
-        .takeWhile { it <= 2000 }
-        .toList() }
+    val radiusInts = remember { listOf(20, 50, 100, 200, 300, 400, 500, 1000) }
     val defaultMeasurement = getRadiusMeasurement()
     val currMeasurement = selectedRadius?.measurement ?: defaultMeasurement
     LaunchedEffect(Unit) {
