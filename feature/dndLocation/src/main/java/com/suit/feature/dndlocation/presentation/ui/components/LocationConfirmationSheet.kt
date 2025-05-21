@@ -59,11 +59,12 @@ typealias TurnDNDOffUponExiting = Boolean
 @Composable
 fun LocationConfirmationSheet(
     update: Boolean,
-    feature: Feature,
+    fullAddress: String,
     sheetState: SheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
     savedLocation: SavedLocation? = null,
     onConfirm: (TurnDNDOnUponEntering, TurnDNDOffUponExiting, RadiusValue) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onDelete: () -> Unit
 ) {
     var turnDNDOnUponEntering by rememberSaveable { mutableStateOf(savedLocation?.turnDNDOnUponEntering != false) }
     var turnDNDOffUponExiting by rememberSaveable { mutableStateOf(savedLocation?.turnDNDOffUponExiting != false) }
@@ -82,7 +83,7 @@ fun LocationConfirmationSheet(
                 .width(450.dp)
                 .padding(20.dp)
         ) {
-            Text(feature.properties.fullAddress,
+            Text(fullAddress,
                 style = MaterialTheme.typography.titleSmall)
             RadiusOptions(
                 selectedRadius = radius,
@@ -98,8 +99,8 @@ fun LocationConfirmationSheet(
                 onTurnDNDOnChange = { turnDNDOnUponEntering = it },
                 onTurnDNDOffChange = { turnDNDOffUponExiting = it }
             )
-            Box(Modifier.fillMaxWidth(),
-                contentAlignment = Alignment.Center) {
+            Column(modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally) {
                 ElevatedButton(
                     colors = ButtonDefaults.elevatedButtonColors(
                         containerColor = MaterialTheme.colorScheme.primaryContainer,
@@ -107,6 +108,20 @@ fun LocationConfirmationSheet(
                     onClick = { onConfirm(turnDNDOnUponEntering, turnDNDOffUponExiting, radius!!) }
                 ) {
                     Text(stringResource(if (update) R.string.update_location else R.string.add_location))
+                }
+                if (update) {
+                    ElevatedButton(
+                        colors = ButtonDefaults.elevatedButtonColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer,
+                        ),
+                        onClick = {
+                            onDelete()
+                            onDismiss()
+                        },
+                        modifier = Modifier.padding(top = 10.dp)
+                    ) {
+                        Text(stringResource(R.string.delete_location))
+                    }
                 }
             }
         }
@@ -123,7 +138,7 @@ private fun RadiusOptions(
     onMeasurementDropdownExpandedChange: (Boolean) -> Unit,
     onRadiusSelect: (Int, RadiusMeasurement) -> Unit
 ) {
-    val radiusInts = remember { listOf(20, 50, 100, 200, 300, 400, 500, 1000) }
+    val radiusInts = remember { listOf(30, 50, 100, 200, 300, 400, 500, 1000) }
     val defaultMeasurement = getRadiusMeasurement()
     val currMeasurement = selectedRadius?.measurement ?: defaultMeasurement
     LaunchedEffect(Unit) {
@@ -282,19 +297,12 @@ fun LocationConfirmationDialogPreview() {
     SilentSyncTheme {
         Surface {
             LocationConfirmationSheet(
-                update = false,
+                update = true,
                 sheetState = rememberStandardBottomSheetState(),
-                feature = Feature(
-                    geometry = Geometry(
-                        coordinates = listOf()
-                    ),
-                    properties = Properties(
-                        mapboxId = "",
-                        fullAddress = "Wrocław, Lower Silesian Voivodeship, Poland"
-                    )
-                ),
+                fullAddress = "Wrocław, Lower Silesian Voivodeship, Poland",
                 onDismiss = {},
-                onConfirm = {_, _, _ -> }
+                onConfirm = {_, _, _ -> },
+                onDelete = {}
             )
         }
     }

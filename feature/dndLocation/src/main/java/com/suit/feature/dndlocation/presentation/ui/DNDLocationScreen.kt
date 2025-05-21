@@ -146,6 +146,9 @@ fun DNDLocationScreenContent(
                 savedLocations = savedLocations,
                 onLocationUpdate = { feature, turnDNDOnUponEntering, turnDNDOffUponExiting, radiusValue ->
                     onIntent(DNDLocationIntent.ConfirmLocation(feature, turnDNDOnUponEntering, turnDNDOffUponExiting, radiusValue))
+                },
+                onLocationDelete = { id ->
+                    onIntent(DNDLocationIntent.DeleteLocation(id))
                 }
             )
         }
@@ -170,12 +173,13 @@ fun DNDLocationScreenContent(
     if (selectedFeature != null) {
         LocationConfirmationSheet(
             update = false,
-            feature = selectedFeature!!,
+            fullAddress = selectedFeature!!.properties.fullAddress,
             onConfirm = { turnDNDOnUponEntering, turnDNDOffUponExiting, radiusValue ->
                 onIntent(DNDLocationIntent.ConfirmLocation(selectedFeature!!, turnDNDOnUponEntering, turnDNDOffUponExiting, radiusValue))
                 selectedFeature = null
                         },
-            onDismiss = { selectedFeature = null }
+            onDismiss = { selectedFeature = null },
+            onDelete = {}
         )
     }
 }

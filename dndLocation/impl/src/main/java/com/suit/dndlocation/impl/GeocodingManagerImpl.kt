@@ -26,7 +26,8 @@ internal class GeocodingManagerImpl(
         }
     }
 
-        override suspend fun geocode(location: String): GeocodingResult {
+
+    override suspend fun geocode(location: String): GeocodingResult {
         val request = client.get("forward") {
             url {
                 parameters.append("q", location)
@@ -34,6 +35,10 @@ internal class GeocodingManagerImpl(
             }
         }.body<GeocodingResult?>()
         return request!!
+    }
+
+    override suspend fun reverseGeocoding(): GeocodingResult {
+        TODO("Not yet implemented")
     }
 
 }

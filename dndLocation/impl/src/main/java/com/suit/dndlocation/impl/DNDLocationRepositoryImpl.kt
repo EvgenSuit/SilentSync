@@ -31,19 +31,29 @@ internal class DNDLocationRepositoryImpl(
                                          radiusValue: RadiusValue) {
         val properties = feature.properties
         val coordinates = feature.geometry.coordinates
-        savedLocationsDb.savedLocationDao().insertLocation(
-            SavedLocation(
-                mapBoxId = properties.mapboxId,
-                fullAddress = properties.fullAddress,
-                longitude = coordinates[0],
-                latitude = coordinates[1],
-                radius = radiusValue.value.toDouble(),
-                radiusMeasurement = radiusValue.measurement,
-                turnDNDOnUponEntering = turnDNDOnUponEntering,
-                turnDNDOffUponExiting = turnDNDOffUponExiting
+        // TODO check if location with the same address exists
+        savedLocationsDb.savedLocationDao().apply {
+            if (locationExists(coordinates[0], coordinates[1])) {
+                getLocationId(coordinates[0], coordinates[1])?.let { existingId ->
+                    deleteLocation(existingId)
+                }
+            }
+            insertLocation(
+                SavedLocation(
+                    fullAddress = properties.fullAddress,
+                    longitude = coordinates[0],
+                    latitude = coordinates[1],
+                    radius = radiusValue.value.toDouble(),
+                    radiusMeasurement = radiusValue.measurement,
+                    turnDNDOnUponEntering = turnDNDOnUponEntering,
+                    turnDNDOffUponExiting = turnDNDOffUponExiting
+                )
             )
-        )
+        }
+    }
 
+    override suspend fun deleteLocation(id: Long) {
+        savedLocationsDb.savedLocationDao().deleteLocation(id)
     }
 
     override fun startLocationService(highAccuracyMode: Boolean) {

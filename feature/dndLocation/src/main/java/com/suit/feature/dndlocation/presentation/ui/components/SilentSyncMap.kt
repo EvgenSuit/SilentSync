@@ -1,6 +1,5 @@
 package com.suit.feature.dndlocation.presentation.ui.components
 
-import android.animation.ValueAnimator
 import android.location.Location
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
@@ -21,7 +20,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -35,21 +33,23 @@ import androidx.compose.ui.unit.dp
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.PointOfInterest
 import com.google.maps.android.compose.AdvancedMarker
 import com.google.maps.android.compose.Circle
 import com.google.maps.android.compose.ComposeMapColorScheme
 import com.google.maps.android.compose.GoogleMap
+import com.google.maps.android.compose.MapProperties
+import com.google.maps.android.compose.MapType
 import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
 import com.suit.dndlocation.api.Feature
 import com.suit.dndlocation.api.Geometry
+import com.suit.dndlocation.api.Properties
 import com.suit.dndlocation.api.RadiusMeasurement
 import com.suit.dndlocation.api.RadiusValue
 import com.suit.dndlocation.api.SavedLocation
 import kotlinx.coroutines.launch
-import java.util.UUID
-import kotlin.math.pow
 
 fun isUserInZone(userLocation: Location, zoneLatLng: LatLng, radiusMeters: Double): Boolean =
     userLocation.distanceTo(Location("").apply {
@@ -61,43 +61,24 @@ fun isUserInZone(userLocation: Location, zoneLatLng: LatLng, radiusMeters: Doubl
 @Composable
 fun SilentSyncMap(currLocation: Location?,
                   savedLocations: List<SavedLocation>?,
-                  onLocationUpdate: (Feature, TurnDNDOnUponEntering, TurnDNDOffUponExiting, RadiusValue) -> Unit) {
+                  onLocationUpdate: (Feature, TurnDNDOnUponEntering, TurnDNDOffUponExiting, RadiusValue) -> Unit,
+                  onLocationDelete: (Long) -> Unit) {
     if (currLocation == null) return
 
-    val scope = rememberCoroutineScope()
-    val circlePosition = remember { mutableStateOf(LatLng(currLocation.latitude, currLocation.longitude)) }
-
-    // animation of a circle representing current location
-    LaunchedEffect(currLocation) {
-        val startPosition = circlePosition.value
-        val endPosition = LatLng(currLocation.latitude, currLocation.longitude)
-
-        // Animate from current circle position to new location
-        val animator = ValueAnimator.ofFloat(0f, 1f)
-        animator.duration = 800
-        animator.interpolator = android.view.animation.AccelerateDecelerateInterpolator()
-
-        animator.addUpdateListener { animation ->
-            val fraction = animation.animatedValue as Float
-            // Linear interpolation between start and end positions
-            val lat = startPosition.latitude + (endPosition.latitude - startPosition.latitude) * fraction
-            val lng = startPosition.longitude + (endPosition.longitude - startPosition.longitude) * fraction
-            circlePosition.value = LatLng(lat, lng)
-        }
-
-        animator.start()
-    }
-
-    val zoom = 17f
     val animDuration = 220
+    val zoom = 17f
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(
             LatLng(currLocation.latitude, currLocation.longitude),
             zoom
         )
     }
+    val scope = rememberCoroutineScope()
     var detailsIndex by rememberSaveable {
         mutableStateOf(-1)
+    }
+    var pointOfInterest by remember {
+        mutableStateOf<PointOfInterest?>(null)
     }
     val userInsideZoneIndex = remember(savedLocations, currLocation) {
         savedLocations?.mapIndexedNotNull { index, location ->
@@ -125,11 +106,17 @@ fun SilentSyncMap(currLocation: Location?,
             onMapLoaded = { mapLoaded = true },
             mapColorScheme = if (isSystemInDarkTheme()) ComposeMapColorScheme.DARK else ComposeMapColorScheme.LIGHT,
             uiSettings = MapUiSettings(
-                zoomControlsEnabled = false,
                 compassEnabled = false,
                 myLocationButtonEnabled = false,
-                mapToolbarEnabled = false
+                zoomControlsEnabled = false
             ),
+            properties = MapProperties(
+                isMyLocationEnabled = true,
+                isBuildingEnabled = true
+            ),
+            onPOIClick = { poi ->
+                pointOfInterest = poi
+            },
             modifier = Modifier.fillMaxSize().alpha(mapAlpha)
         ) {
             savedLocations?.forEachIndexed { i, targetLocation ->
@@ -166,7 +153,12 @@ fun SilentSyncMap(currLocation: Location?,
                     animationSpec = tween(animDuration)
                 )
                 AdvancedMarker(
-                    state = MarkerState(position = LatLng(targetLocation.latitude, targetLocation.longitude)),
+                    state = MarkerState(
+                        position = LatLng(
+                            targetLocation.latitude,
+                            targetLocation.longitude
+                        )
+                    ),
                     onClick = {
                         detailsIndex = i
                         true
@@ -176,7 +168,7 @@ fun SilentSyncMap(currLocation: Location?,
                     center = LatLng(targetLocation.latitude, targetLocation.longitude),
                     fillColor = MaterialTheme.colorScheme.primaryContainer.copy(animatedAlpha),
                     strokeColor = animatedStrokeColor,
-                    radius = when(targetLocation.radiusMeasurement) {
+                    radius = when (targetLocation.radiusMeasurement) {
                         RadiusMeasurement.Meters -> targetLocation.radius
                         RadiusMeasurement.Yards -> targetLocation.radius * 1.09361
                     },
@@ -188,53 +180,78 @@ fun SilentSyncMap(currLocation: Location?,
                     }
                 )
             }
-            Circle(
-                center = circlePosition.value,
-                fillColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                strokeColor = MaterialTheme.colorScheme.primaryContainer,
-                strokeWidth = 2f,
-                radius = 8.0 * 2.0.pow((18.0 - cameraPositionState.position.zoom))
-            )
         }
         ElevatedButton(
             onClick = {
                 scope.launch {
-                    cameraPositionState.animate(CameraUpdateFactory.newLatLngZoom(LatLng(currLocation.latitude, currLocation.longitude), zoom))
+                    cameraPositionState.animate(
+                        CameraUpdateFactory.newLatLngZoom(
+                            LatLng(
+                                currLocation.latitude,
+                                currLocation.longitude
+                            ), cameraPositionState.position.zoom
+                        )
+                    )
                 }
             },
             modifier = Modifier.align(Alignment.BottomEnd)
                 .padding(10.dp)
         ) {
             Icons.Filled.LocationOn.let {
-                Icon(it, contentDescription = it.name,
-                    modifier = Modifier.padding(6.dp))
+                Icon(
+                    it, contentDescription = it.name,
+                    modifier = Modifier.padding(vertical = 6.dp)
+                )
             }
         }
-        AnimatedVisibility(!mapLoaded,
+        AnimatedVisibility(
+            !mapLoaded,
             enter = fadeIn(),
             exit = fadeOut()
         ) {
-            Box(modifier = Modifier.fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)) {
+            Box(
+                modifier = Modifier.fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background)
+            ) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             }
         }
-    }
-    if (detailsIndex != -1 && savedLocations != null) {
-        val selectedLocation = savedLocations[detailsIndex]
-        val feature = Feature(
-            geometry = Geometry(coordinates = listOf(selectedLocation.longitude, selectedLocation.latitude)),
-            properties = com.suit.dndlocation.api.Properties(selectedLocation.mapBoxId, fullAddress = selectedLocation.fullAddress)
-        )
-        LocationConfirmationSheet(
-            update = true,
-            feature = feature,
-            savedLocation = selectedLocation,
-            onConfirm = { turnDNDOnUponEntering, turnDNDOffUponExiting, radiusValue ->
-                onLocationUpdate(feature, turnDNDOnUponEntering, turnDNDOffUponExiting, radiusValue)
-                detailsIndex = -1
-            },
-            onDismiss = { detailsIndex = -1 }
-        )
+
+        if ((detailsIndex != -1 && savedLocations != null) || pointOfInterest != null) {
+            val selectedLocation =
+                if (savedLocations != null && pointOfInterest == null) savedLocations[detailsIndex] else null
+            val feature = Feature(
+                geometry = Geometry(
+                    coordinates = if (pointOfInterest != null) listOf(
+                        pointOfInterest!!.latLng.longitude,
+                        pointOfInterest!!.latLng.latitude
+                    ) else listOf(selectedLocation!!.longitude, selectedLocation.latitude)
+                ),
+                properties = if (pointOfInterest != null) Properties(
+                    mapboxId = "",
+                    fullAddress = pointOfInterest!!.name
+                ) else Properties(mapboxId = "", fullAddress = selectedLocation!!.fullAddress)
+            )
+            LocationConfirmationSheet(
+                update = pointOfInterest == null,
+                fullAddress = feature.properties.fullAddress,
+                savedLocation = selectedLocation,
+                onConfirm = { turnDNDOnUponEntering, turnDNDOffUponExiting, radiusValue ->
+                    onLocationUpdate(
+                        feature,
+                        turnDNDOnUponEntering,
+                        turnDNDOffUponExiting,
+                        radiusValue
+                    )
+                    if (pointOfInterest != null) pointOfInterest = null else detailsIndex = -1
+                },
+                onDelete = {
+                    onLocationDelete(selectedLocation!!.id)
+                },
+                onDismiss = {
+                    if (pointOfInterest != null) pointOfInterest = null else detailsIndex = -1
+                }
+            )
+        }
     }
 }

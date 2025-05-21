@@ -16,9 +16,18 @@ interface SavedLocationsDAO {
     @Query("DELETE FROM SavedLocation")
     suspend fun deleteLocations()
 
+    @Query("DELETE FROM SavedLocation WHERE id = :id")
+    suspend fun deleteLocation(id: Long)
+    @Query("SELECT id FROM SavedLocation WHERE longitude = :longitude AND latitude = :latitude LIMIT 1")
+    suspend fun getLocationId(longitude: Double, latitude: Double): Long?
+
+
     @Query("SELECT * FROM SavedLocation")
     fun fetchLocations(): Flow<List<SavedLocation>>
 
-    @Query("UPDATE SavedLocation SET didEnter = :didEnter, didExit = :didExit WHERE mapBoxId = :id")
-    suspend fun updateZoneStatus(id: String, didEnter: Boolean, didExit: Boolean)
+    @Query("SELECT EXISTS(SELECT 1 FROM SavedLocation WHERE longitude = :longitude AND latitude = :latitude)")
+    suspend fun locationExists(longitude: Double, latitude: Double): Boolean
+
+    @Query("UPDATE SavedLocation SET didEnter = :didEnter, didExit = :didExit WHERE id = :id")
+    suspend fun updateZoneStatus(id: Long, didEnter: Boolean, didExit: Boolean)
 }

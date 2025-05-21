@@ -2,16 +2,16 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "94cd1bf2db834bb5a2611996efbedaf0",
+    "identityHash": "d556a798bb1b34e182f2d67ce3e22435",
     "entities": [
       {
         "tableName": "SavedLocation",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`mapBoxId` TEXT NOT NULL, `fullAddress` TEXT NOT NULL, `longitude` REAL NOT NULL, `latitude` REAL NOT NULL, `radius` REAL NOT NULL, `radiusMeasurement` TEXT NOT NULL, `turnDNDOnUponEntering` INTEGER NOT NULL, `turnDNDOffUponExiting` INTEGER NOT NULL, `didEnter` INTEGER NOT NULL, `didExit` INTEGER NOT NULL, PRIMARY KEY(`mapBoxId`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `fullAddress` TEXT NOT NULL, `longitude` REAL NOT NULL, `latitude` REAL NOT NULL, `radius` REAL NOT NULL, `radiusMeasurement` TEXT NOT NULL, `turnDNDOnUponEntering` INTEGER NOT NULL, `turnDNDOffUponExiting` INTEGER NOT NULL, `didEnter` INTEGER NOT NULL, `didExit` INTEGER NOT NULL)",
         "fields": [
           {
-            "fieldPath": "mapBoxId",
-            "columnName": "mapBoxId",
-            "affinity": "TEXT",
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
             "notNull": true
           },
           {
@@ -70,9 +70,9 @@
           }
         ],
         "primaryKey": {
-          "autoGenerate": false,
+          "autoGenerate": true,
           "columnNames": [
-            "mapBoxId"
+            "id"
           ]
         },
         "indices": [],
@@ -82,7 +82,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '94cd1bf2db834bb5a2611996efbedaf0')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'd556a798bb1b34e182f2d67ce3e22435')"
     ]
   }
 }

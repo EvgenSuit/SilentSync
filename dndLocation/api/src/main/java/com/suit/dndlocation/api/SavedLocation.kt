@@ -5,8 +5,8 @@ import androidx.room.PrimaryKey
 
 @Entity
 data class SavedLocation(
-    @PrimaryKey
-    val mapBoxId: String,
+    @PrimaryKey(autoGenerate = true)
+    val id: Long = 0,
     val fullAddress: String,
     val longitude: Double,
     val latitude: Double,

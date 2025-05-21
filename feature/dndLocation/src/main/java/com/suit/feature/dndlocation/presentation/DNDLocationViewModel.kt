@@ -59,10 +59,10 @@ class DNDLocationViewModel(
             })
         }*/
         CurrentLocation.location
-
         .stateIn(viewModelScope, SharingStarted.Lazily, null)
     val savedLocations = dndLocationRepository.savedLocationsFlow()
         .map { locations ->
+            println("Locations: $locations")
             // render locations with higher radius first
             locations.sortedByDescending { it.radius }
         }
@@ -75,6 +75,7 @@ class DNDLocationViewModel(
             is DNDLocationIntent.ConfirmLocation -> confirmLocation(
                 intent.feature, intent.turnDNDOnUponEntering, intent.turnDNDOffUponExiting, intent.radiusValue
             )
+            is DNDLocationIntent.DeleteLocation -> deleteLocation(intent.id)
         }
     }
 
@@ -84,9 +85,22 @@ class DNDLocationViewModel(
             .take(256)
         _uiState.update { it.copy(locationInput = formattedLocation) }
         viewModelScope.launch {
-            delay(700)
-            val geocodingResult = dndLocationRepository.geocode(formattedLocation)
-            _uiState.update { it.copy(geocodingResult = geocodingResult) }
+            delay(820)
+            try {
+                val geocodingResult = dndLocationRepository.geocode(formattedLocation)
+                _uiState.update { it.copy(geocodingResult = geocodingResult) }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+    private fun deleteLocation(id: Long) {
+        viewModelScope.launch {
+            try {
+                dndLocationRepository.deleteLocation(id)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 

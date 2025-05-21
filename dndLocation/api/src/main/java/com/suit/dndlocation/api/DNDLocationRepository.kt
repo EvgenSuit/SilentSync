@@ -35,4 +35,5 @@ interface DNDLocationRepository {
     suspend fun confirmLocation(feature: Feature, turnDNDOnUponEntering: Boolean,
                                 turnDNDOffUponExiting: Boolean,
                                 radiusValue: RadiusValue)
+    suspend fun deleteLocation(id: Long)
 }

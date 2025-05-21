@@ -41,8 +41,7 @@ fun LocationPermissionComponent(
             PermissionDialog(
                 text = stringResource(R.string.background_location_permission),
                 onAccept = {
-                    if (backgroundLocationPermissionState.status.shouldShowRationale || !backgroundLocationPermissionState.status.isGranted) context.navigateToSettings()
-                    else backgroundLocationPermissionState.launchPermissionRequest()
+                    backgroundLocationPermissionState.launchPermissionRequest()
                 },
                 onDismiss = {}
             )

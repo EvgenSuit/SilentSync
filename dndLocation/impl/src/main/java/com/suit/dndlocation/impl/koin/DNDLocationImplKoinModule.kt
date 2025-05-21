@@ -1,6 +1,7 @@
 package com.suit.dndlocation.impl.koin
 
 import androidx.room.Room
+import com.google.android.gms.location.LocationServices
 import com.suit.dndlocation.api.DNDLocationRepository
 import com.suit.dndlocation.api.GeocodingManager
 import com.suit.dndlocation.impl.DNDLocationRepositoryImpl
@@ -19,6 +20,7 @@ val dndLocationImplModule = module {
         )
     }
     single { CoroutineScope(Dispatchers.IO) }
+    single { LocationServices.getFusedLocationProviderClient(androidContext()) }
     single {
         Room.databaseBuilder(
             context = androidContext(),

@@ -14,10 +14,10 @@ import androidx.annotation.RequiresPermission
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.Granularity
 import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
-import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.suit.dndlocation.api.SavedLocation
 import com.suit.dndlocation.impl.db.SavedLocationsDb
@@ -28,7 +28,7 @@ import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 
 internal class LocationService: Service(), KoinComponent {
-    private lateinit var fusedLocationClient: FusedLocationProviderClient
+    private val fusedLocationClient by inject<FusedLocationProviderClient>()
     private lateinit var locationCallback: LocationCallback
     private val savedLocationsDb by inject<SavedLocationsDb>()
     private val coroutineScope by inject<CoroutineScope>()
@@ -75,8 +75,6 @@ internal class LocationService: Service(), KoinComponent {
             buildNotification(),
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION else 0
         )
-
-        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
         locationCallback = object: LocationCallback() {
             @RequiresPermission(Manifest.permission.ACCESS_FINE_LOCATION)
             override fun onLocationResult(locationResult: LocationResult) {
@@ -86,58 +84,76 @@ internal class LocationService: Service(), KoinComponent {
                 coroutineScope.launch {
                     println("Current location: ${currentLocation.let { "Lat: ${it.latitude}, Long: ${it.longitude}" }}")
 
-                    val savedLocations = savedLocationsDao.fetchLocations().first()
-                    var closestInsideLocation: Pair<SavedLocation, Float>? = null
-                    var minDistanceInside = Float.MAX_VALUE
-                    var closestOutsideLocation: Pair<SavedLocation, Float>? = null
-                    var minDistanceOutside = Float.MAX_VALUE
+                    val saved = savedLocationsDao.fetchLocations().first()
 
-                    for (savedLocation in savedLocations) {
-                        val targetLocation = Location("").apply {
-                            latitude = savedLocation.latitude
-                            longitude = savedLocation.longitude
+                    // 1) Detect crossings
+                    val zonesJustEntered = mutableListOf<SavedLocation>()
+                    val zonesJustExited  = mutableListOf<SavedLocation>()
+
+                    for (z in saved) {
+                        val dist = currentLocation.distanceTo(Location("").apply {
+                            latitude  = z.latitude
+                            longitude = z.longitude
+                        })
+
+                        val nowInside = dist <= z.radius
+
+                        if (nowInside && !z.didEnter) {
+                            zonesJustEntered += z
                         }
-                        val distanceInMeters = currentLocation.distanceTo(targetLocation)
-                        if (distanceInMeters <= savedLocation.radius) {
-                            if (!savedLocation.didEnter) {
-                                if (distanceInMeters < minDistanceInside) {
-                                    closestInsideLocation = savedLocation to distanceInMeters
-                                    minDistanceInside = distanceInMeters
-                                }
-                            }
-                        } else if (savedLocation.didEnter && !savedLocation.didExit) {
-                            if (distanceInMeters < minDistanceOutside) {
-                                closestOutsideLocation = savedLocation to distanceInMeters
-                                minDistanceOutside = distanceInMeters
-                            }
+                        if (!nowInside && z.didEnter && !z.didExit) {
+                            zonesJustExited += z
                         }
                     }
-                    closestInsideLocation?.let { (location, _) ->
-                        if (location.turnDNDOnUponEntering) {
-                            notificationManager.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_PRIORITY)
-                        }
-                        savedLocationsDao.updateZoneStatus(location.mapBoxId, true, false)
-                        println("Turning DND on")
+
+                    // 2) Update DB flags in one go
+                    zonesJustEntered.forEach { z ->
+                        savedLocationsDao.updateZoneStatus(z.id, true, false)
                     }
-                    // After checking all locations, handle the closest exited location if no new entry occurred
-                    if (closestInsideLocation == null) {
-                        closestOutsideLocation?.let { (location, _) ->
-                            if (location.turnDNDOffUponExiting) {
-                                notificationManager.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_ALL)
+                    zonesJustExited.forEach { z ->
+                        savedLocationsDao.updateZoneStatus(z.id, false, true)
+                    }
+
+                    // 3) Edge-trigger DND
+                    // a) Any zone we just entered that says "turn on" => fire once
+                    zonesJustEntered.firstOrNull { it.turnDNDOnUponEntering }?.let {
+                        notificationManager.setInterruptionFilter(
+                            NotificationManager.INTERRUPTION_FILTER_PRIORITY
+                        )
+                        return@launch // we’re done for this callback
+                    }
+
+                    // b) Else, any zone we just exited that says "turn off" => but only if
+                    //    no other zone is currently active that still wants DND-on
+                    if (zonesJustExited.any { it.turnDNDOffUponExiting }) {
+                        // check fresh active zones:
+                        val stillInside = saved
+                            .map { z -> z.copy(
+                                didEnter = if (zonesJustEntered.any { it.id == z.id }) true
+                                else if (zonesJustExited.any  { it.id == z.id }) false
+                                else z.didEnter,
+                                didExit  = if (zonesJustExited.any  { it.id == z.id }) true
+                                else z.didExit
+                            )
                             }
-                            savedLocationsDao.updateZoneStatus(location.mapBoxId, false, true)
+                            .filter { it.didEnter }
+
+                        // only turn off if none of those stillInside want DND-on
+                        if (stillInside.none { it.turnDNDOnUponEntering }) {
+                            notificationManager.setInterruptionFilter(
+                                NotificationManager.INTERRUPTION_FILTER_ALL
+                            )
                         }
                     }
                 }
             }
         }
 
-        fusedLocationClient.removeLocationUpdates(locationCallback)
-        val locationUpdateIntervalMillis = if (highAccuracyMode) 2_000L else 30_000L
         fusedLocationClient.requestLocationUpdates(
-            LocationRequest.Builder(locationUpdateIntervalMillis)
-                .setIntervalMillis(locationUpdateIntervalMillis)
+            LocationRequest.Builder(0)
                 .setPriority(if (highAccuracyMode) Priority.PRIORITY_HIGH_ACCURACY else Priority.PRIORITY_LOW_POWER)
+                .setWaitForAccurateLocation(true)
+                .setMinUpdateDistanceMeters(if (highAccuracyMode) 2f else 5f)
                 .build(),
             locationCallback,
             Looper.getMainLooper())
