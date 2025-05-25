@@ -39,7 +39,6 @@ import com.google.maps.android.compose.Circle
 import com.google.maps.android.compose.ComposeMapColorScheme
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapProperties
-import com.google.maps.android.compose.MapType
 import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
@@ -120,7 +119,8 @@ fun SilentSyncMap(currLocation: Location?,
             modifier = Modifier.fillMaxSize().alpha(mapAlpha)
         ) {
             savedLocations?.forEachIndexed { i, targetLocation ->
-                val isUserInside = userInsideZoneIndex == i
+                // TODO use didEnter flag instead?
+                val isUserInside = targetLocation.didEnter //userInsideZoneIndex == i
 
                 val isSelected = detailsIndex == i
                 val targetAlpha = when {

@@ -9,6 +9,7 @@ import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.location.Location
 import android.os.Build
+import android.os.HandlerThread
 import android.os.Looper
 import androidx.annotation.RequiresPermission
 import androidx.core.app.NotificationCompat
@@ -131,9 +132,7 @@ internal class LocationService: Service(), KoinComponent {
                             .map { z -> z.copy(
                                 didEnter = if (zonesJustEntered.any { it.id == z.id }) true
                                 else if (zonesJustExited.any  { it.id == z.id }) false
-                                else z.didEnter,
-                                didExit  = if (zonesJustExited.any  { it.id == z.id }) true
-                                else z.didExit
+                                else z.didEnter
                             )
                             }
                             .filter { it.didEnter }
@@ -149,14 +148,16 @@ internal class LocationService: Service(), KoinComponent {
             }
         }
 
+        fusedLocationClient.removeLocationUpdates(locationCallback)
         fusedLocationClient.requestLocationUpdates(
             LocationRequest.Builder(0)
+                .setIntervalMillis(2000)
                 .setPriority(if (highAccuracyMode) Priority.PRIORITY_HIGH_ACCURACY else Priority.PRIORITY_LOW_POWER)
                 .setWaitForAccurateLocation(true)
-                .setMinUpdateDistanceMeters(if (highAccuracyMode) 2f else 5f)
+                //.setMinUpdateDistanceMeters(if (highAccuracyMode) 2f else 5f)
                 .build(),
             locationCallback,
-            Looper.getMainLooper())
+            HandlerThread("LocationThread").apply { start() }.looper)
     }
 
     private companion object {
@@ -166,6 +167,7 @@ internal class LocationService: Service(), KoinComponent {
 
     override fun onDestroy() {
         fusedLocationClient.removeLocationUpdates(locationCallback)
+        coroutineScope.launch { savedLocationsDb.savedLocationDao().resetAllZoneStatuses() }
         super.onDestroy()
     }
 }

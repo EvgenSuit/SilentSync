@@ -30,4 +30,7 @@ interface SavedLocationsDAO {
 
     @Query("UPDATE SavedLocation SET didEnter = :didEnter, didExit = :didExit WHERE id = :id")
     suspend fun updateZoneStatus(id: Long, didEnter: Boolean, didExit: Boolean)
+
+    @Query("UPDATE SavedLocation SET didEnter = 0, didExit = 0")
+    suspend fun resetAllZoneStatuses()
 }

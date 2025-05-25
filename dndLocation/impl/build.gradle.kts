@@ -59,6 +59,7 @@ dependencies {
     implementation(libs.androidx.room.ktx)
 
     implementation(platform(libs.ktor.bom))
+    implementation(libs.androidx.datastore)
     implementation(libs.ktor.client.core)
     implementation(libs.ktor.client.cio)
     implementation(libs.ktor.client.content.negotiation)

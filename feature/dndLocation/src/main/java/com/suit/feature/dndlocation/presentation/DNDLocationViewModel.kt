@@ -1,7 +1,5 @@
 package com.suit.feature.dndlocation.presentation
 
-import android.location.Location
-import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.suit.dndlocation.api.DNDLocationRepository
@@ -11,18 +9,12 @@ import com.suit.dndlocation.api.RadiusValue
 import com.suit.dndlocation.impl.CurrentLocation
 import com.suit.feature.dndlocation.presentation.ui.DNDLocationIntent
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.forEach
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onCompletion
-import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.toCollection
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -62,20 +54,41 @@ class DNDLocationViewModel(
         .stateIn(viewModelScope, SharingStarted.Lazily, null)
     val savedLocations = dndLocationRepository.savedLocationsFlow()
         .map { locations ->
-            println("Locations: $locations")
             // render locations with higher radius first
             locations.sortedByDescending { it.radius }
         }
         .stateIn(viewModelScope, SharingStarted.Lazily, null)
+    val isLocationFeatureEnabled = dndLocationRepository.isFeatureEnabled()
+        .stateIn(viewModelScope, SharingStarted.Lazily, null)
 
     fun handleIntent(intent: DNDLocationIntent) {
         when (intent) {
-            is DNDLocationIntent.StartService -> dndLocationRepository.startLocationService(highAccuracyMode = intent.highAccuracyMode)
+            is DNDLocationIntent.ToggleService -> toggleLocationService(intent.highAccuracyMode)
+            is DNDLocationIntent.ToggleLocationFeatureAvailability -> toggleFeatureAvailability(intent.enable)
             is DNDLocationIntent.LocationInput -> onLocationInput(intent.location)
             is DNDLocationIntent.ConfirmLocation -> confirmLocation(
                 intent.feature, intent.turnDNDOnUponEntering, intent.turnDNDOffUponExiting, intent.radiusValue
             )
             is DNDLocationIntent.DeleteLocation -> deleteLocation(intent.id)
+        }
+    }
+    private fun toggleLocationService(highAccuracyMode: Boolean) {
+        viewModelScope.launch {
+            try {
+                dndLocationRepository.toggleLocationService(highAccuracyMode, dndLocationRepository.isFeatureEnabled().first())
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    private fun toggleFeatureAvailability(enable: Boolean) {
+        viewModelScope.launch {
+            try {
+                dndLocationRepository.toggleFeatureAvailability(enable)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 
@@ -90,6 +103,7 @@ class DNDLocationViewModel(
                 val geocodingResult = dndLocationRepository.geocode(formattedLocation)
                 _uiState.update { it.copy(geocodingResult = geocodingResult) }
             } catch (e: Exception) {
+                // TODO error handling (show a snackbar)
                 e.printStackTrace()
             }
         }

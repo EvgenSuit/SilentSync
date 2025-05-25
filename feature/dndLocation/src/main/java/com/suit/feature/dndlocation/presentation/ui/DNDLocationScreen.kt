@@ -4,23 +4,27 @@ import android.location.Location
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -28,6 +32,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.input.pointer.pointerInput
@@ -61,14 +67,16 @@ fun DNDLocationScreen(
         val uiState by viewModel.uiState.collectAsStateWithLifecycle()
         val currLocation by viewModel.locationFlow.collectAsState()
         val savedLocations by viewModel.savedLocations.collectAsState()
+        val isFeatureEnabled by viewModel.isLocationFeatureEnabled.collectAsState()
         LifecycleEventEffect(Lifecycle.Event.ON_START) {
-            viewModel.handleIntent(DNDLocationIntent.StartService(true))
+            viewModel.handleIntent(DNDLocationIntent.ToggleService(true))
         }
         LifecycleEventEffect(Lifecycle.Event.ON_STOP) {
-            viewModel.handleIntent(DNDLocationIntent.StartService(false))
+            viewModel.handleIntent(DNDLocationIntent.ToggleService(false))
         }
         DNDLocationScreenContent(
             currLocation = currLocation,
+            isFeatureEnabled = isFeatureEnabled,
             savedLocations = savedLocations,
             uiState = uiState,
             onIntent = viewModel::handleIntent
@@ -81,6 +89,7 @@ fun DNDLocationScreen(
 fun DNDLocationScreenContent(
     currLocation: Location?,
     savedLocations: List<SavedLocation>?,
+    isFeatureEnabled: Boolean?,
     uiState: DNDLocationUIState,
     onIntent: (DNDLocationIntent) -> Unit
 ) {
@@ -141,16 +150,41 @@ fun DNDLocationScreenContent(
                         textFieldHeight = with(localDensity) { coordinates.size.height.toDp() }
                     }
             )
-            SilentSyncMap(
-                currLocation = currLocation,
-                savedLocations = savedLocations,
-                onLocationUpdate = { feature, turnDNDOnUponEntering, turnDNDOffUponExiting, radiusValue ->
-                    onIntent(DNDLocationIntent.ConfirmLocation(feature, turnDNDOnUponEntering, turnDNDOffUponExiting, radiusValue))
-                },
-                onLocationDelete = { id ->
-                    onIntent(DNDLocationIntent.DeleteLocation(id))
+            Box(
+                modifier = Modifier.fillMaxSize()
+            ) {
+                SilentSyncMap(
+                    currLocation = currLocation,
+                    savedLocations = savedLocations,
+                    onLocationUpdate = { feature, turnDNDOnUponEntering, turnDNDOffUponExiting, radiusValue ->
+                        onIntent(DNDLocationIntent.ConfirmLocation(feature, turnDNDOnUponEntering, turnDNDOffUponExiting, radiusValue))
+                    },
+                    onLocationDelete = { id ->
+                        onIntent(DNDLocationIntent.DeleteLocation(id))
+                    }
+                )
+                Row(
+                    modifier = Modifier.align(Alignment.TopEnd)
+                        .padding(5.dp)
+                        .clip(RoundedCornerShape(15.dp))
+                        .background(MaterialTheme.colorScheme.background.copy(0.7f))
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(5.dp)
+                    ) {
+                        Text(
+                            stringResource(if (isFeatureEnabled == true) R.string.tracking_enabled else R.string.tracking_disabled)
+                        )
+                        Checkbox(
+                            checked = isFeatureEnabled == true,
+                            onCheckedChange = {
+                                onIntent(DNDLocationIntent.ToggleLocationFeatureAvailability(it))
+                            },
+                        )
+                    }
                 }
-            )
+            }
         }
         AnimatedVisibility(showResultColumn,
             enter = fadeIn(),

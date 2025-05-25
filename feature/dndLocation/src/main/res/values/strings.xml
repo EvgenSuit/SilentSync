@@ -2,6 +2,8 @@
 <resources>
     <string name="location">Location</string>
     <string name="app_name">SilentSync</string>
+    <string name="tracking_enabled">Tracking enabled</string>
+    <string name="tracking_disabled">Tracking disabled</string>
 
     <string name="radius">Radius</string>
     <string name="meters">Meters</string>

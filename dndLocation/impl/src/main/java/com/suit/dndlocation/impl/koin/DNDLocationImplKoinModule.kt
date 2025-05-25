@@ -4,9 +4,12 @@ import androidx.room.Room
 import com.google.android.gms.location.LocationServices
 import com.suit.dndlocation.api.DNDLocationRepository
 import com.suit.dndlocation.api.GeocodingManager
+import com.suit.dndlocation.api.LocationFeatureAvailabilityManager
 import com.suit.dndlocation.impl.DNDLocationRepositoryImpl
 import com.suit.dndlocation.impl.GeocodingManagerImpl
+import com.suit.dndlocation.impl.LocationFeatureAvailabilityManagerImpl
 import com.suit.dndlocation.impl.db.SavedLocationsDb
+import com.suit.dndlocation.impl.locationFeatureAvailabilityDatastore
 import io.ktor.client.engine.cio.CIO
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -17,6 +20,11 @@ val dndLocationImplModule = module {
     single<GeocodingManager> {
         GeocodingManagerImpl(
             engine = CIO.create()
+        )
+    }
+    single<LocationFeatureAvailabilityManager> {
+        LocationFeatureAvailabilityManagerImpl(
+            dataStore = androidContext().locationFeatureAvailabilityDatastore
         )
     }
     single { CoroutineScope(Dispatchers.IO) }
@@ -33,7 +41,8 @@ val dndLocationImplModule = module {
         DNDLocationRepositoryImpl(
             context = androidContext(),
             savedLocationsDb = get(),
-            geocodingManager = get()
+            geocodingManager = get(),
+            locationFeatureAvailabilityManager = get()
         )
     }
 }
