@@ -20,6 +20,8 @@ interface SavedLocationsDAO {
     suspend fun deleteLocation(id: Long)
     @Query("SELECT id FROM SavedLocation WHERE longitude = :longitude AND latitude = :latitude LIMIT 1")
     suspend fun getLocationId(longitude: Double, latitude: Double): Long?
+    @Query("SELECT * FROM SavedLocation WHERE id = :id")
+    suspend fun getLocation(id: Long): SavedLocation?
 
 
     @Query("SELECT * FROM SavedLocation")

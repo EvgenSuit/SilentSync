@@ -47,12 +47,14 @@ android {
 
 dependencies {
 
+    implementation(project(":utility"))
     implementation(project(":dndLocation:api"))
 
     implementation(libs.koin.core)
     implementation(libs.koin.android)
 
     implementation(libs.play.services.location)
+    implementation(libs.coroutines.play.services)
 
     ksp(libs.androidx.room.compiler)
     implementation(libs.androidx.room.runtime)

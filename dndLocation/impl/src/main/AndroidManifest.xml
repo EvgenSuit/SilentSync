@@ -12,5 +12,6 @@
         <service
             android:name=".LocationService"
             android:foregroundServiceType="location"/>
+        <receiver android:name=".GeofenceBroadcastReceiver"/>
     </application>
 </manifest>

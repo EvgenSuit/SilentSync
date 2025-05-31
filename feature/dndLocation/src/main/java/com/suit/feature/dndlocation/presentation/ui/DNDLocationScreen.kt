@@ -25,6 +25,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -32,7 +33,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Rect
@@ -56,6 +56,9 @@ import com.suit.feature.dndlocation.presentation.ui.components.GeocodingResultCo
 import com.suit.feature.dndlocation.presentation.ui.components.LocationConfirmationSheet
 import com.suit.feature.dndlocation.presentation.ui.components.LocationPermissionComponent
 import com.suit.feature.dndlocation.presentation.ui.components.SilentSyncMap
+import com.suit.utility.ui.DNDLocationUIEvent
+import com.suit.utility.ui.LocalSnackbarController
+import kotlinx.coroutines.flow.collectLatest
 import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalPermissionsApi::class)
@@ -65,9 +68,19 @@ fun DNDLocationScreen(
 ) {
     LocationPermissionComponent {
         val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+        val snackbarController = LocalSnackbarController.current
         val currLocation by viewModel.locationFlow.collectAsState()
         val savedLocations by viewModel.savedLocations.collectAsState()
         val isFeatureEnabled by viewModel.isLocationFeatureEnabled.collectAsState()
+        LaunchedEffect(viewModel) {
+            viewModel.uiEvent.collectLatest { event ->
+                when (event) {
+                    is DNDLocationUIEvent.ShowSnackbar -> {
+                        snackbarController.showSnackbar(event.uiText)
+                    }
+                }
+            }
+        }
         LifecycleEventEffect(Lifecycle.Event.ON_START) {
             viewModel.handleIntent(DNDLocationIntent.ToggleService(true))
         }

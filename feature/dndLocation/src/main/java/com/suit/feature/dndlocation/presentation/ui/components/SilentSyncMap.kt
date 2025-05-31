@@ -45,16 +45,9 @@ import com.google.maps.android.compose.rememberCameraPositionState
 import com.suit.dndlocation.api.Feature
 import com.suit.dndlocation.api.Geometry
 import com.suit.dndlocation.api.Properties
-import com.suit.dndlocation.api.RadiusMeasurement
 import com.suit.dndlocation.api.RadiusValue
 import com.suit.dndlocation.api.SavedLocation
 import kotlinx.coroutines.launch
-
-fun isUserInZone(userLocation: Location, zoneLatLng: LatLng, radiusMeters: Double): Boolean =
-    userLocation.distanceTo(Location("").apply {
-        latitude = zoneLatLng.latitude
-        longitude = zoneLatLng.longitude
-    }) <= radiusMeters
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -78,18 +71,6 @@ fun SilentSyncMap(currLocation: Location?,
     }
     var pointOfInterest by remember {
         mutableStateOf<PointOfInterest?>(null)
-    }
-    val userInsideZoneIndex = remember(savedLocations, currLocation) {
-        savedLocations?.mapIndexedNotNull { index, location ->
-            val radiusMeters = when (location.radiusMeasurement) {
-                RadiusMeasurement.Meters -> location.radius
-                RadiusMeasurement.Yards -> location.radius * 0.9144
-            }
-            val zoneLatLng = LatLng(location.latitude, location.longitude)
-            if (isUserInZone(currLocation, zoneLatLng, radiusMeters)) index to radiusMeters else null
-        }
-            ?.minByOrNull { it.second } // Select smallest radius among matching zones
-            ?.first
     }
     var mapLoaded by remember { mutableStateOf(false) }
     val mapAlpha by animateFloatAsState(
@@ -119,8 +100,7 @@ fun SilentSyncMap(currLocation: Location?,
             modifier = Modifier.fillMaxSize().alpha(mapAlpha)
         ) {
             savedLocations?.forEachIndexed { i, targetLocation ->
-                // TODO use didEnter flag instead?
-                val isUserInside = targetLocation.didEnter //userInsideZoneIndex == i
+                val isUserInside = targetLocation.didEnter
 
                 val isSelected = detailsIndex == i
                 val targetAlpha = when {
@@ -168,10 +148,7 @@ fun SilentSyncMap(currLocation: Location?,
                     center = LatLng(targetLocation.latitude, targetLocation.longitude),
                     fillColor = MaterialTheme.colorScheme.primaryContainer.copy(animatedAlpha),
                     strokeColor = animatedStrokeColor,
-                    radius = when (targetLocation.radiusMeasurement) {
-                        RadiusMeasurement.Meters -> targetLocation.radius
-                        RadiusMeasurement.Yards -> targetLocation.radius * 1.09361
-                    },
+                    radius = targetLocation.radiusValueMeters(),
                     strokeWidth = animatedStrokeWidth,
                     clickable = true,
                     onClick = {

@@ -1,9 +1,17 @@
 package com.suit.dndlocation.api
 
 import androidx.room.TypeConverter
+import com.suit.dndlocation.api.RadiusMeasurement.Meters
+import com.suit.dndlocation.api.RadiusMeasurement.Yards
 import kotlinx.coroutines.flow.Flow
+import kotlin.text.toDouble
 
-class RadiusValue(val value: Int, val measurement: RadiusMeasurement)
+class RadiusValue(val value: Int, val measurement: RadiusMeasurement) {
+    fun toValue(): Double = when (measurement) {
+        is Meters -> value.toDouble()
+        is Yards -> value.toDouble() * 0.9144
+    }
+}
 
 sealed class RadiusMeasurement {
     data object Meters: RadiusMeasurement()

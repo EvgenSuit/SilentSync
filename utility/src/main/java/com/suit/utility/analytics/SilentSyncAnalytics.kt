@@ -6,7 +6,8 @@ import com.google.firebase.crashlytics.FirebaseCrashlytics
 enum class SilentSyncEvent {
     SYNC_EVENTS,
     DND_ON,
-    DND_OFF
+    DND_OFF,
+    LOCATION_SERVICE_ALARM_FALLBACK
 }
 
 class SilentSyncAnalytics(

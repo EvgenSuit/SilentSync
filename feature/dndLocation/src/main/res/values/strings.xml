@@ -18,4 +18,9 @@
     <string name="background_location_permission">Allowing background location access lets the app track your location even when it is not open. This is needed to keep location updates running in the background.</string>
 
     <string name="address">Address</string>
+
+    <string name="could_not_toggle_feature_availability">Could not toggle feature availability</string>
+    <string name="could_not_fetch_locations">Could not fetch locations</string>
+    <string name="could_not_delete_location">Could not delete location</string>
+    <string name="could_not_add_location">Could not add location</string>
 </resources>
