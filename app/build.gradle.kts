@@ -17,8 +17,8 @@ android {
         applicationId = "com.suit.silentsync"
         minSdk = 26
         targetSdk = 35
-        versionCode = 3
-        versionName = "1.0-alpha01"
+        versionCode = 4
+        versionName = "1.1-alpha"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         multiDexEnabled = true
