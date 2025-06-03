@@ -20,7 +20,9 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles("consumer-rules.pro")
 
-        manifestPlaceholders["MAP_SDK_KEY"] = localProperties["MAP_SDK_KEY"] as String
+        manifestPlaceholders += mapOf(
+            "MAP_SDK_KEY" to localProperties["MAP_SDK_KEY"] as String,
+        )
     }
 
     buildTypes {
@@ -32,7 +34,7 @@ android {
             )
         }
     }
-    testOptions.unitTests.isIncludeAndroidResources = true
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
@@ -66,6 +68,11 @@ dependencies {
     implementation(libs.androidx.material3)
 
     testImplementation(libs.junit)
+    testImplementation(libs.kotlin.test.junit)
+    testImplementation(libs.mockk)
+    testImplementation(libs.turbine)
+    testImplementation(project(":testUtil"))
+    testImplementation(libs.kotlinx.coroutines.test)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
 }

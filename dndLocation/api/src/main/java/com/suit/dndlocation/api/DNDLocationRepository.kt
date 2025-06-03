@@ -22,15 +22,15 @@ class RadiusMeasurementConverter {
     @TypeConverter
     fun fromRadiusMeasurement(radiusMeasurement: RadiusMeasurement): String {
         return when (radiusMeasurement) {
-            RadiusMeasurement.Meters -> "Meters"
-            RadiusMeasurement.Yards -> "Yards"
+            Meters -> "Meters"
+            Yards -> "Yards"
         }
     }
     @TypeConverter
     fun toRadiusMeasurement(value: String): RadiusMeasurement {
         return when (value) {
-            "Meters" -> RadiusMeasurement.Meters
-            "Yards" -> RadiusMeasurement.Yards
+            "Meters" -> Meters
+            "Yards" -> Yards
             else -> throw IllegalArgumentException("Invalid radius measurement: $value")
         }
     }

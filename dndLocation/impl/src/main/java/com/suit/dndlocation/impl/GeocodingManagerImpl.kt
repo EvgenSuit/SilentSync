@@ -36,9 +36,4 @@ internal class GeocodingManagerImpl(
         }.body<GeocodingResult?>()
         return request!!
     }
-
-    override suspend fun reverseGeocoding(): GeocodingResult {
-        TODO("Not yet implemented")
-    }
-
 }

@@ -31,16 +31,10 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            manifestPlaceholders["crashlyticsCollectionEnabled"] = true
-            manifestPlaceholders["analyticsCollectionEnabled"] = true
             ndk.debugSymbolLevel = "FULL"
             configure<CrashlyticsExtension> {
                 mappingFileUploadEnabled = true
             }
-        }
-        debug {
-            manifestPlaceholders["crashlyticsCollectionEnabled"] = false
-            manifestPlaceholders["analyticsCollectionEnabled"] = false
         }
     }
     compileOptions {

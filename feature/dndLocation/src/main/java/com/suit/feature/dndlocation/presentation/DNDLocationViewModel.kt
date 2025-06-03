@@ -17,6 +17,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.WhileSubscribed
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
@@ -36,42 +37,16 @@ class DNDLocationViewModel(
     private val _uiEvent = MutableSharedFlow<DNDLocationUIEvent>()
     val uiEvent = _uiEvent.asSharedFlow()
 
-    val locationFlow = /*flow<Location?> {
-            emit(Location("").apply {
-                latitude = 51.08793
-                longitude = 17.011963
-            })
-            delay(2000)
-            emit(Location("").apply {
-                latitude = 51.08735
-                longitude = 17.011945
-            })
-            delay(2000)
-            emit(Location("").apply {
-                latitude = 51.08773
-                longitude = 17.011963
-            })
-            delay(2000)
-            emit(Location("").apply {
-                latitude = 51.08650
-                longitude = 17.011919
-            })
-            delay(2000)
-            emit(Location("").apply {
-                latitude = 51.08793
-                longitude = 17.011963
-            })
-        }*/
-        CurrentLocation.location
-        .stateIn(viewModelScope, SharingStarted.Lazily, null)
+    val locationFlow = CurrentLocation.location
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
     val savedLocations = dndLocationRepository.savedLocationsFlow()
         .map { locations ->
             // render locations with higher radius first
             locations.sortedByDescending { it.radius }
         }
-        .stateIn(viewModelScope, SharingStarted.Lazily, null)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
     val isLocationFeatureEnabled = dndLocationRepository.isFeatureEnabled()
-        .stateIn(viewModelScope, SharingStarted.Lazily, null)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     fun handleIntent(intent: DNDLocationIntent) {
         when (intent) {
@@ -89,6 +64,7 @@ class DNDLocationViewModel(
             try {
                 dndLocationRepository.toggleLocationService(highAccuracyMode, dndLocationRepository.isFeatureEnabled().first())
             } catch (e: Exception) {
+                _uiEvent.emit(DNDLocationUIEvent.ShowSnackbar(UIText.StringResource(R.string.unknown_error)))
                 analytics.recordException(e)
             }
         }
@@ -106,14 +82,15 @@ class DNDLocationViewModel(
     }
 
     private fun onLocationInput(location: String) {
-        if (location.contains(';')) return
         val formattedLocation = location
+            .filter { it != ';' }
             .take(256)
         _uiState.update { it.copy(locationInput = formattedLocation) }
         viewModelScope.launch(dispatcher) {
-            delay(820)
+            delay(900)
             try {
                 val geocodingResult = dndLocationRepository.geocode(formattedLocation)
+                println(formattedLocation)
                 _uiState.update { it.copy(geocodingResult = geocodingResult) }
             } catch (e: Exception) {
                 _uiEvent.emit(DNDLocationUIEvent.ShowSnackbar(UIText.StringResource(R.string.could_not_fetch_locations)))

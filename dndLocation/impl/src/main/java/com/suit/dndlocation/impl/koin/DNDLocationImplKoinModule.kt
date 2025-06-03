@@ -1,5 +1,6 @@
 package com.suit.dndlocation.impl.koin
 
+import android.app.AlarmManager
 import android.app.NotificationManager
 import androidx.room.Room
 import com.google.android.gms.location.LocationServices
@@ -30,6 +31,7 @@ val dndLocationImplModule = module {
         )
     }
     single { CoroutineScope(Dispatchers.IO) }
+    single { androidContext().getSystemService(NotificationManager::class.java) }
     single { LocationServices.getFusedLocationProviderClient(androidContext()) }
     single {
         Room.databaseBuilder(
@@ -42,14 +44,14 @@ val dndLocationImplModule = module {
     single {
         LocationServices.getGeofencingClient(androidContext())
     }
+    single { androidContext().getSystemService(AlarmManager::class.java) }
     single { androidContext().getSystemService(NotificationManager::class.java) }
     single<DNDLocationRepository> {
         DNDLocationRepositoryImpl(
             context = androidContext(),
             savedLocationsDb = get(),
             geocodingManager = get(),
-            locationFeatureAvailabilityManager = get(),
-            geofencingClient = get()
+            locationFeatureAvailabilityManager = get()
         )
     }
 }

@@ -23,4 +23,5 @@
     <string name="could_not_fetch_locations">Could not fetch locations</string>
     <string name="could_not_delete_location">Could not delete location</string>
     <string name="could_not_add_location">Could not add location</string>
+    <string name="unknown_error">Unknown error</string>
 </resources>

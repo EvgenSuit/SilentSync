@@ -33,6 +33,9 @@ android {
             )
         }
     }
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
+    }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
@@ -73,7 +76,15 @@ dependencies {
     implementation(libs.androidx.lifecycle.process)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
+
+    testImplementation(project(":testUtil"))
     testImplementation(libs.junit)
+    testImplementation(libs.mockk)
+    testImplementation(libs.androidx.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.robolectric)
+
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+    testImplementation(kotlin("test"))
 }
