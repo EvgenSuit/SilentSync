@@ -23,7 +23,7 @@ android {
         consumerProguardFiles("consumer-rules.pro")
 
         manifestPlaceholders += mapOf(
-            "MAP_SDK_KEY" to (localProperties["MAP_SDK_KEY"] as String? ?: ""),
+            "MAP_SDK_KEY" to (localProperties.getProperty("MAP_SDK_KEY") ?: ""),
         )
     }
 

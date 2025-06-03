@@ -10,7 +10,7 @@ plugins {
 }
 
 buildConfig {
-    buildConfigField("MAPBOX_ACCESS_TOKEN", gradleLocalProperties(rootDir, providers).getProperty("MAPBOX_ACCESS_TOKEN"))
+    buildConfigField("MAPBOX_ACCESS_TOKEN", gradleLocalProperties(rootDir, providers).getProperty("MAPBOX_ACCESS_TOKEN") ?: "")
 }
 
 android {
