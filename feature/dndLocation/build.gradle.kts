@@ -6,8 +6,10 @@ plugins {
     alias(libs.plugins.kotlin.android)
 }
 
-val localProperties = Properties().apply {
-    load(rootProject.file("local.properties").inputStream())
+val localProperties = Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localProperties.load(localPropertiesFile.inputStream())
 }
 
 android {
@@ -21,7 +23,7 @@ android {
         consumerProguardFiles("consumer-rules.pro")
 
         manifestPlaceholders += mapOf(
-            "MAP_SDK_KEY" to localProperties["MAP_SDK_KEY"] as String,
+            "MAP_SDK_KEY" to (localProperties["MAP_SDK_KEY"] as String? ?: ""),
         )
     }
 
