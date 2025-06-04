@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="location">Location</string>
+    <string name="app_name">SilentSync</string>
+    <string name="tracking_enabled">Tracking enabled</string>
+    <string name="tracking_disabled">Tracking disabled</string>
+
+    <string name="radius">Radius</string>
+    <string name="meters">Meters</string>
+    <string name="yards">Yards</string>
+    <string name="turn_dnd_on_upon_entering">Turn DND on upon entering</string>
+    <string name="turn_dnd_off_upon_exiting">Turn DND off upon exiting</string>
+    <string name="add_location">Add location</string>
+    <string name="update_location">Update location</string>
+    <string name="delete_location">Delete location</string>
+
+    <string name="location_permission">We need your permission to access your location in order to provide this feature.</string>
+    <string name="background_location_permission">Allowing background location access lets the app track your location even when it is not open. This is needed to keep location updates running in the background.</string>
+
+    <string name="address">Address</string>
+
+    <string name="could_not_toggle_feature_availability">Could not toggle feature availability</string>
+    <string name="could_not_fetch_locations">Could not fetch locations</string>
+    <string name="could_not_delete_location">Could not delete location</string>
+    <string name="could_not_add_location">Could not add location</string>
+    <string name="unknown_error">Unknown error</string>
+</resources>

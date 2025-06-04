@@ -1,0 +1,4 @@
+<resources>
+    <string name="location_service_active">Location Service Active</string>
+    <string name="monitoring_zones">Monitoring zones…</string>
+</resources>

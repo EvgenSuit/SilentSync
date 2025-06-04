@@ -14,8 +14,12 @@
             <option value="$PROJECT_DIR$/dndCalendar" />
             <option value="$PROJECT_DIR$/dndCalendar/api" />
             <option value="$PROJECT_DIR$/dndCalendar/impl" />
+            <option value="$PROJECT_DIR$/dndLocation" />
+            <option value="$PROJECT_DIR$/dndLocation/api" />
+            <option value="$PROJECT_DIR$/dndLocation/impl" />
             <option value="$PROJECT_DIR$/feature" />
             <option value="$PROJECT_DIR$/feature/dndCalendar" />
+            <option value="$PROJECT_DIR$/feature/dndLocation" />
             <option value="$PROJECT_DIR$/playReview" />
             <option value="$PROJECT_DIR$/playReview/api" />
             <option value="$PROJECT_DIR$/playReview/impl" />

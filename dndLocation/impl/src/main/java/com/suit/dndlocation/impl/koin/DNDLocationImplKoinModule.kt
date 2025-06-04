@@ -1,0 +1,57 @@
+package com.suit.dndlocation.impl.koin
+
+import android.app.AlarmManager
+import android.app.NotificationManager
+import androidx.room.Room
+import com.google.android.gms.location.LocationServices
+import com.suit.dndlocation.api.DNDLocationRepository
+import com.suit.dndlocation.api.GeocodingManager
+import com.suit.dndlocation.api.LocationFeatureAvailabilityManager
+import com.suit.dndlocation.impl.DNDLocationRepositoryImpl
+import com.suit.dndlocation.impl.GeocodingManagerImpl
+import com.suit.dndlocation.impl.LocationFeatureAvailabilityManagerImpl
+import com.suit.dndlocation.impl.db.SavedLocationsDb
+import com.suit.dndlocation.impl.locationFeatureAvailabilityDatastore
+import io.ktor.client.engine.cio.CIO
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import org.koin.android.ext.koin.androidContext
+import org.koin.dsl.module
+
+val dndLocationImplModule = module {
+
+    single<GeocodingManager> {
+        GeocodingManagerImpl(
+            engine = CIO.create()
+        )
+    }
+    single<LocationFeatureAvailabilityManager> {
+        LocationFeatureAvailabilityManagerImpl(
+            dataStore = androidContext().locationFeatureAvailabilityDatastore
+        )
+    }
+    single { CoroutineScope(Dispatchers.IO) }
+    single { androidContext().getSystemService(NotificationManager::class.java) }
+    single { LocationServices.getFusedLocationProviderClient(androidContext()) }
+    single {
+        Room.databaseBuilder(
+            context = androidContext(),
+            SavedLocationsDb::class.java,
+            "saved-locations"
+        )
+            .build()
+    }
+    single {
+        LocationServices.getGeofencingClient(androidContext())
+    }
+    single { androidContext().getSystemService(AlarmManager::class.java) }
+    single { androidContext().getSystemService(NotificationManager::class.java) }
+    single<DNDLocationRepository> {
+        DNDLocationRepositoryImpl(
+            context = androidContext(),
+            savedLocationsDb = get(),
+            geocodingManager = get(),
+            locationFeatureAvailabilityManager = get()
+        )
+    }
+}

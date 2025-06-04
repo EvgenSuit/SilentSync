@@ -17,8 +17,8 @@ android {
         applicationId = "com.suit.silentsync"
         minSdk = 26
         targetSdk = 35
-        versionCode = 3
-        versionName = "1.0-alpha01"
+        versionCode = 5
+        versionName = "1.1-alpha01"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         multiDexEnabled = true
@@ -31,16 +31,10 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            manifestPlaceholders["crashlyticsCollectionEnabled"] = true
-            manifestPlaceholders["analyticsCollectionEnabled"] = true
             ndk.debugSymbolLevel = "FULL"
             configure<CrashlyticsExtension> {
                 mappingFileUploadEnabled = true
             }
-        }
-        debug {
-            manifestPlaceholders["crashlyticsCollectionEnabled"] = false
-            manifestPlaceholders["analyticsCollectionEnabled"] = false
         }
     }
     compileOptions {
@@ -63,6 +57,7 @@ android {
 dependencies {
 
     implementation(project(":feature:dndCalendar"))
+    implementation(project(":feature:dndLocation"))
     implementation(project(":playReview:impl"))
     implementation(project(":playReview:api"))
     implementation(project(":utility"))
@@ -79,6 +74,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.androidx.lifecycle.process)
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
