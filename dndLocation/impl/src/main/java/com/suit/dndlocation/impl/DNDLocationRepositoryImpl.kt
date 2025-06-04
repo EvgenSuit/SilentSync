@@ -27,6 +27,7 @@ internal class DNDLocationRepositoryImpl(
     @RequiresPermission(Manifest.permission.ACCESS_FINE_LOCATION)
     override suspend fun toggleFeatureAvailability(enabled: Boolean) {
         locationFeatureAvailabilityManager.toggleFeatureAvailability(enabled)
+        if (!enabled) savedLocationsDb.savedLocationDao().resetAllZoneStatuses()
         toggleLocationService(true, enabled)
     }
 

@@ -90,7 +90,6 @@ class DNDLocationViewModel(
             delay(900)
             try {
                 val geocodingResult = dndLocationRepository.geocode(formattedLocation)
-                println(formattedLocation)
                 _uiState.update { it.copy(geocodingResult = geocodingResult) }
             } catch (e: Exception) {
                 _uiEvent.emit(DNDLocationUIEvent.ShowSnackbar(UIText.StringResource(R.string.could_not_fetch_locations)))

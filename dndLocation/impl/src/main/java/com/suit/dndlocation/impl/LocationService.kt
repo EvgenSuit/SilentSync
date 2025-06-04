@@ -67,7 +67,7 @@ internal class LocationService: Service(), KoinComponent {
             handleZones(highAccuracyMode)
         } catch (e: IllegalStateException) {
            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && e is ForegroundServiceStartNotAllowedException) {
-               alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, 1_000, PendingIntent.getService(this, 0,
+               alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, 15_000, PendingIntent.getService(this, 0,
                    Intent(this, LocationService::class.java), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
                analytics.logEvent(SilentSyncEvent.LOCATION_SERVICE_ALARM_FALLBACK)
            } else {
@@ -178,7 +178,6 @@ internal class LocationService: Service(), KoinComponent {
 
     override fun onDestroy() {
         fusedLocationClient.removeLocationUpdates(locationCallback)
-        coroutineScope.launch { savedLocationsDb.savedLocationDao().resetAllZoneStatuses() }
         super.onDestroy()
     }
 }

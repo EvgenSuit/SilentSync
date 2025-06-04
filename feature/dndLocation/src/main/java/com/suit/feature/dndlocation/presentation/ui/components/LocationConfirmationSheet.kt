@@ -232,7 +232,6 @@ private fun DNDOptionsRow(
     Row(
         modifier = Modifier.fillMaxWidth()
     ) {
-        println("DNDOption: ${stringResource(R.string.turn_dnd_on_upon_entering)}")
         DNDOption(
             id = R.string.turn_dnd_on_upon_entering,
             checked = turnDNDOnUponEntering,
